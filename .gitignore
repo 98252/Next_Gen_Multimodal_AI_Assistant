@@ -1,0 +1,21 @@
+# Environments & Secrets
+.env
+*.env
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache & build
+__pycache__/
+*.py[cod]
+*$py.class
+dist/
+build/
+*.egg-info/
+
+# OS / IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

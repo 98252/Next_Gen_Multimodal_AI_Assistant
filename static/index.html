@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nepal-GPT | Next-Gen AI Assistant</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+    <!-- Modern Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Highlight.js for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Chart.js for interactive chart rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/style.css?v=9.0">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Drag and Drop Overlay Indicator -->
+        <div class="drag-drop-overlay" id="dragDropOverlay">
+            <div class="drag-drop-box">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <h3>Drop Image or Document to Attach</h3>
+                <p>Images (PNG, JPG, WEBP) & Files (TXT, CSV, PDF, Code)</p>
+            </div>
+        </div>
+
+        <!-- Left Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Sidebar Header / Brand -->
+            <div class="sidebar-header">
+                <div class="brand-container">
+                    <div class="brand-icon">
+                        <img src="/static/logo.svg" alt="Emblem of Nepal" class="brand-logo-img">
+                    </div>
+                    <span class="brand-title">Nepal-GPT</span>
+                    <span class="pro-badge">PRO</span>
+                </div>
+                <button class="icon-btn close-sidebar-btn" id="toggleSidebarBtn" title="Toggle Sidebar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Action Buttons: New Chat & New Chart -->
+            <div class="sidebar-actions">
+                <button class="new-chat-btn primary-action" id="newChatBtn" onclick="createNewSession('New Chat')" title="Start a fresh conversation (Ctrl+K)">
+                    <span class="btn-text"><i class="fa-solid fa-plus"></i> New Chat</span>
+                    <span class="shortcut-key">Ctrl+K</span>
+                </button>
+                <button class="new-chart-btn" id="newChartBtn" onclick="createSampleChart()" title="Generate an interactive visual chart">
+                    <span class="btn-text"><i class="fa-solid fa-chart-pie"></i> New Chart</span>
+                    <span class="badge-feature">AI Viz</span>
+                </button>
+            </div>
+
+            <!-- Search Chat History -->
+            <div class="history-search-wrapper">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="historySearchInput" placeholder="Search chat history..." class="history-search-input">
+                <button class="search-clear-btn" id="searchClearBtn" style="display: none;" title="Clear search">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- AI Mode Selector -->
+            <div class="mode-section">
+                <div class="section-label"><i class="fa-solid fa-brain"></i> AI MODE</div>
+                <div class="custom-select-wrapper">
+                    <select id="aiModeSelect" class="mode-select">
+                        <option value="general" selected>🌐 General Assistant</option>
+                        <option value="study">📚 Study Assistant</option>
+                        <option value="coding">💻 Coding Assistant</option>
+                        <option value="research">🔬 Research Assistant</option>
+                        <option value="data">📊 Data Analyst</option>
+                        <option value="nepal">🇳🇵 Nepal Assistant</option>
+                        <option value="document">📄 Document Assistant</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                </div>
+            </div>
+
+            <!-- Active Model Selector -->
+            <div class="model-section">
+                <div class="section-label"><i class="fa-solid fa-microchip"></i> ACTIVE MODEL</div>
+                <div class="custom-select-wrapper">
+                    <select id="modelSelect" class="model-select">
+                        <option value="gemini-flash-lite-latest" selected>Gemini Flash Lite (Fast & Smart)</option>
+                        <option value="gemini-flash-latest">Gemini Flash (Multimodal & Vision)</option>
+                        <option value="gemini-3.6-flash">Gemini 3.6 Flash (Next-Gen)</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                </div>
+            </div>
+
+            <!-- Chat History Section -->
+            <div class="recent-chats-section">
+                <div class="recent-header">
+                    <span class="section-label"><i class="fa-solid fa-clock-rotate-left"></i> CHAT HISTORY</span>
+                    <button class="clear-all-btn" id="clearHistoryBtn" onclick="clearAllHistory()" title="Clear all saved chats">Clear All</button>
+                </div>
+                <div class="chats-list" id="chatsList">
+                    <!-- Dynamic chat session history items grouped by date & pinned -->
+                </div>
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                <button class="persona-btn" id="personaBtn" title="Customize system prompt & persona">
+                    <i class="fa-solid fa-sliders"></i> Persona Instructions
+                </button>
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text" id="statusLabel">Checking API...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Content -->
+        <main class="main-chat" id="chatArea">
+            <!-- Chat Top Navbar -->
+            <header class="chat-header">
+                <div class="header-left">
+                    <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn" title="Open Sidebar">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    
+                    <!-- Editable Title Container -->
+                    <div class="chat-title-container" id="chatTitleContainer" title="Click to Rename this Chat">
+                        <h1 class="chat-title" id="chatTitle">Namaste 🙏</h1>
+                        <i class="fa-solid fa-pen header-title-edit-icon"></i>
+                    </div>
+
+                    <button class="header-pin-btn" id="headerPinBtn" onclick="if (currentSessionId) togglePinSession(currentSessionId)" title="Pin / Unpin this Chat">
+                        <i class="fa-solid fa-thumbtack"></i>
+                    </button>
+                    
+                    <!-- AI Mode Pill Badge -->
+                    <div class="mode-pill" id="activeModePill" title="Current AI Mode">
+                        <i class="fa-solid fa-brain"></i>
+                        <span id="pillModeText">General Assistant</span>
+                    </div>
+
+                    <!-- Model Pill Badge -->
+                    <div class="model-pill" id="activeModelPill" title="Current Gemini Model">
+                        <i class="fa-solid fa-sparkles"></i>
+                        <span id="pillModelText">✦ Gemini Flash Lite</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="header-action-btn" id="headerNewChatBtn" onclick="createNewSession('New Chat')" title="Start New Chat">
+                        <i class="fa-solid fa-plus"></i> New Chat
+                    </button>
+                    <button class="reset-btn" id="resetChatBtn" onclick="resetCurrentChat()" title="Reset Current Chat">
+                        <i class="fa-solid fa-rotate-right"></i> Reset
+                    </button>
+                </div>
+            </header>
+
+            <!-- Messages Stream Container -->
+            <div class="messages-container" id="messagesContainer">
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-card">
+                        <div class="welcome-avatar">
+                            <img src="/static/logo.svg" alt="Nepal Logo" class="welcome-logo-img">
+                        </div>
+                        <h2 id="welcomeTitle">नमस्ते! What would you like to explore?</h2>
+                        <p id="welcomeSubtitle">Select an AI Mode, attach an image/file, or ask anything in English or Nepali.</p>
+                        
+                        <!-- Mode Quick Switch Cards -->
+                        <div class="mode-chips-grid">
+                            <button class="mode-chip" onclick="switchAIMode('general')">🌐 <b>General</b><br><span>Everyday assistance</span></button>
+                            <button class="mode-chip" onclick="switchAIMode('study')">📚 <b>Study</b><br><span>Notes, quizzes & exams</span></button>
+                            <button class="mode-chip" onclick="switchAIMode('coding')">💻 <b>Coding</b><br><span>Debug & generate code</span></button>
+                            <button class="mode-chip" onclick="switchAIMode('research')">🔬 <b>Research</b><br><span>Facts & structured analysis</span></button>
+                            <button class="mode-chip" onclick="switchAIMode('data')">📊 <b>Data Analyst</b><br><span>Charts & patterns</span></button>
+                            <button class="mode-chip" onclick="switchAIMode('nepali')">🇳🇵 <b>Nepal Special</b><br><span>Culture, NPR & tourism</span></button>
+                            <button class="mode-chip" onclick="switchAIMode('document')">📄 <b>Doc Assistant</b><br><span>Summarize & query files</span></button>
+                        </div>
+
+                        <div class="suggestion-chips" id="suggestionChips">
+                            <button class="chip" onclick="createSampleChart()">📊 Generate an Interactive Nepal Tourism Chart</button>
+                            <button class="chip" onclick="document.getElementById('imageUploadInput').click()">🖼️ Upload Image for Multimodal AI Vision Analysis</button>
+                            <button class="chip" onclick="sendPrompt('Explain the top attractions and trekking routes in Nepal with itinerary tips')">🏔️ Nepal Trekking & Travel Guide</button>
+                            <button class="chip" onclick="sendPrompt('Write a fullstack Python FastAPI and JavaScript web app with authentication')">⚡ FastAPI + JS Web App Architecture</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="messages-list" id="messagesList">
+                    <!-- Dynamic Messages -->
+                </div>
+            </div>
+
+            <!-- Floating Input Area -->
+            <footer class="chat-input-wrapper">
+                <!-- Attached Item Banner (Image thumbnail, Document info & Progress) -->
+                <div class="attachment-preview-container" id="attachmentPreviewContainer" style="display: none;">
+                    <!-- Loading Progress Bar -->
+                    <div class="attachment-progress-wrapper" id="attachmentProgressWrapper" style="display: none;">
+                        <div class="attachment-progress-header">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span class="attachment-progress-status" id="attachmentProgressStatus">Extracting document text...</span>
+                        </div>
+                        <div class="attachment-progress-track">
+                            <div class="attachment-progress-fill" id="attachmentProgressFill"></div>
+                        </div>
+                    </div>
+
+                    <!-- Ready Card -->
+                    <div class="attachment-card" id="attachmentCard">
+                        <div class="attachment-thumb-wrapper" id="attachmentThumbWrapper" style="display: none;">
+                            <img id="attachmentImgPreview" src="" alt="Thumbnail" class="attachment-thumb">
+                        </div>
+                        <div class="attachment-file-icon" id="attachmentDocIcon">
+                            <i class="fa-solid fa-file-pdf" id="docIconType"></i>
+                        </div>
+                        <div class="attachment-details">
+                            <span class="attachment-name" id="attachmentName">document.pdf</span>
+                            <span class="attachment-size" id="attachmentSize">1.2 MB</span>
+                        </div>
+                        <button class="remove-attachment-btn" id="removeAttachmentBtn" title="Remove attachment">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Study Mode Action Bar (Visible when Study Mode is selected) -->
+                <div class="study-actions-bar" id="studyActionsBar" style="display: none;">
+                    <span class="study-actions-label">📚 Study Actions:</span>
+                    <button class="study-action-btn" onclick="executeStudyAction('explain')" title="Explain concept with 6-part framework">📖 Explain Topic</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('notes')" title="Create revision notes">📝 Make Notes</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('summary')" title="Summarize topic">📄 Summarize</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('questions')" title="Generate study questions">❓ Generate Questions</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('mcqs')" title="Generate multiple choice questions">☑️ Generate MCQs</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('flashcards')" title="Create concept flashcards">🧠 Flashcards</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('exam')" title="Exam preparation guide & answers">🎯 Exam Prep</button>
+                    <button class="study-action-btn is-quiz" onclick="executeStudyAction('quiz')" title="Interactive turn-by-turn quiz">🔄 Quiz Me</button>
+                </div>
+
+                <!-- Document Interactive Prompt Chips (Visible when doc is attached) -->
+                <div class="doc-quick-chips" id="docQuickChips" style="display: none;">
+                    <span class="quick-chip-label">✨ Quick Ask:</span>
+                    <button class="doc-chip" onclick="setDocPrompt('Summarize this document in key takeaways')">📋 Summarize</button>
+                    <button class="doc-chip" onclick="setDocPrompt('Find the most important points and highlights')">🔍 Important Points</button>
+                    <button class="doc-chip" onclick="setDocPrompt('Generate 5 exam questions from this document with answers')">❓ Generate Questions</button>
+                    <button class="doc-chip" onclick="setDocPrompt('Explain this topic in simple language for beginners')">💡 Explain Simply</button>
+                    <button class="doc-chip" onclick="setDocPrompt('Explain Unit 2 in detail')">📖 Explain Unit 2</button>
+                </div>
+
+                <div class="input-container">
+                    <!-- Hidden File Inputs -->
+                    <input type="file" id="fileUploadInput" style="display: none;" accept=".pdf,.docx,.txt,.csv,.json,.md">
+                    <input type="file" id="imageUploadInput" style="display: none;" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+                    
+                    <button class="tool-btn" id="attachFileBtn" title="Chat with Document (PDF, DOCX, TXT, CSV)">
+                        <i class="fa-solid fa-file-arrow-up"></i>
+                    </button>
+
+                    <button class="tool-btn" id="attachImageBtn" title="Attach Image for AI Vision Analysis">
+                        <i class="fa-regular fa-image"></i>
+                    </button>
+                    
+                    <button class="tool-btn" id="chartPromptBtn" title="Insert Chart Request">
+                        <i class="fa-solid fa-chart-column"></i>
+                    </button>
+
+                    <!-- Language Preference Selector -->
+                    <div class="lang-selector-wrapper" title="Select Preferred Response Language">
+                        <i class="fa-solid fa-language lang-selector-icon"></i>
+                        <select id="responseLangSelect" class="response-lang-select" aria-label="Preferred Response Language">
+                            <option value="auto">🌐 Auto</option>
+                            <option value="nepali" selected>🇳🇵 नेपाली (Nepali)</option>
+                            <option value="english">🇬🇧 English</option>
+                            <option value="hindi">🇮🇳 हिन्दी (Hindi)</option>
+                            <option value="marathi">🇮🇳 मराठी (Marathi)</option>
+                            <option value="urdu">🇵🇰 اردو (Urdu)</option>
+                            <option value="maithili">🇳🇵 मैथिली (Maithili)</option>
+                            <option value="bhojpuri">🇳🇵 भोजपुरी (Bhojpuri)</option>
+                        </select>
+                    </div>
+                    
+                    <textarea 
+                        id="userInput" 
+                        class="chat-textarea" 
+                        rows="1" 
+                        spellcheck="false"
+                        autocomplete="off"
+                        autocorrect="off"
+                        onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); handleSend(); }"
+                        oninput="autoResizeTextarea()"
+                        placeholder="Message Nepal-GPT... (Press Enter to send, Shift+Enter for newline)"></textarea>
+                    
+                    <div class="input-actions">
+                        <button class="stop-btn" id="stopBtn" style="display: none;" onclick="handleStop()" title="Stop Generating">
+                            <i class="fa-solid fa-stop"></i> Stop
+                        </button>
+                        <button class="send-btn" id="sendBtn" onclick="handleSend()" title="Send Message">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="input-disclaimer">
+                    Supports text, code, CSV/JSON data, document analysis, and multimodal image recognition via Google Gemini.
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Persona & Custom Prompt Modal -->
+    <div class="modal-overlay" id="personaModal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-sliders"></i> Persona & System Prompt</h3>
+                <button class="close-modal-btn" id="closeModalBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <label for="personaPrompt">Custom System Instructions:</label>
+                <textarea id="personaPrompt" rows="5" spellcheck="false" placeholder="Define how Nepal-GPT should behave..."></textarea>
+                
+                <div class="quick-personas">
+                    <span class="quick-label">Presets:</span>
+                    <button class="preset-chip" onclick="setPreset('general')">General</button>
+                    <button class="preset-chip" onclick="setPreset('study')">Study</button>
+                    <button class="preset-chip" onclick="setPreset('coding')">Coding</button>
+                    <button class="preset-chip" onclick="setPreset('research')">Research</button>
+                    <button class="preset-chip" onclick="setPreset('data')">Data</button>
+                    <button class="preset-chip" onclick="setPreset('nepal')">Nepal</button>
+                    <button class="preset-chip" onclick="setPreset('document')">Document</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" id="resetPersonaBtn">Reset Default</button>
+                <button class="btn primary" id="savePersonaBtn">Save Persona</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js?v=9.0"></script>
+</body>
+</html>
