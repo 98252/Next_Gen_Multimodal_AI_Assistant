@@ -364,10 +364,12 @@ def get_status():
         "active_model": "gemini-flash-lite-latest",
         "guest_limit": GUEST_USAGE_LIMIT,
         "models": [
-            {"id": "gemini-flash-lite-latest", "name": "Gemini Flash Lite (Fast & Reliable)", "desc": "Ultra fast and cost efficient"},
-            {"id": "gemini-3.5-flash-lite", "name": "Gemini 3.5 Flash Lite (Smart)", "desc": "High speed with rich multimodal capabilities"},
-            {"id": "gemini-3.1-flash-lite", "name": "Gemini 3.1 Flash Lite (Fast)", "desc": "Efficient reasoning model"},
-            {"id": "gemini-flash-latest", "name": "Gemini Flash (Vision)", "desc": "Multimodal vision & reasoning"}
+            {"id": "gemini-flash-lite-latest", "name": "Gemini Flash Lite (Fast & Reliable)", "desc": "Ultra fast, lightweight and high availability"},
+            {"id": "gemini-3.6-flash", "name": "Gemini 3.6 Flash (High Performance)", "desc": "Balanced speed, high intelligence & coding capability"},
+            {"id": "gemini-3.5-flash", "name": "Gemini 3.5 Flash (Multimodal & Vision)", "desc": "Deep image analysis and complex multimodal reasoning"},
+            {"id": "gemini-3.5-flash-lite", "name": "Gemini 3.5 Flash Lite (Smart & Lightweight)", "desc": "Efficient reasoning with high responsiveness"},
+            {"id": "gemini-3.1-flash-lite", "name": "Gemini 3.1 Flash Lite (Next-Gen Speed)", "desc": "Ultra-low latency reasoning model"},
+            {"id": "gemini-flash-latest", "name": "Gemini Flash (Standard Multimodal)", "desc": "Full-capacity multimodal reasoning"}
         ]
     }
 
@@ -490,10 +492,12 @@ def stream_chat(
             + system_prompt
         )
 
-    # Highly reliable fallback model pool
-    primary_model = req.model or "gemini-flash-lite-latest"
+    # Highly reliable verified model pool
+    primary_model = (req.model or "gemini-flash-lite-latest").strip()
     fallback_pool = [
         "gemini-flash-lite-latest",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
         "gemini-3.5-flash-lite",
         "gemini-3.1-flash-lite",
         "gemini-flash-latest"

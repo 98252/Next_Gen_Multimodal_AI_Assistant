@@ -6,6 +6,7 @@ const DEFAULT_GREETING = "नमस्ते! 🙏 I am **Nepal-GPT**, your inte
 const STORAGE_KEY = "nepal_gpt_sessions_v5";
 const MODE_STORAGE_KEY = "nepal_gpt_aimode_v5";
 const LANG_STORAGE_KEY = "nepal_gpt_lang_pref";
+const MODEL_STORAGE_KEY = "nepal_gpt_aimodel_v1";
 
 // Auth & Quota Storage Keys
 const AUTH_TOKEN_KEY = "nepal_gpt_auth_token_v1";
@@ -217,6 +218,18 @@ function initApp() {
         aiModeSelect.value = currentAIMode;
     }
     updateModeUI(currentAIMode, false);
+
+    if (modelSelect) {
+        const savedModel = localStorage.getItem(MODEL_STORAGE_KEY);
+        if (savedModel && Array.from(modelSelect.options).some(o => o.value === savedModel)) {
+            modelSelect.value = savedModel;
+        }
+        const opt = modelSelect.options[modelSelect.selectedIndex];
+        if (opt && pillModelText) {
+            const cleanName = opt.text.split('(')[0].replace(/^[^\w]+/, '').trim();
+            pillModelText.textContent = `✦ ${cleanName}`;
+        }
+    }
 
     if (userInput) {
         userInput.addEventListener("input", autoResizeTextarea);
@@ -626,6 +639,15 @@ function updateModeUI(modeKey, notify = true) {
     if (modePill) {
         modePill.innerHTML = `<i class="fa-solid ${mode.icon}"></i> <span>${mode.name}</span>`;
     }
+
+    // Update Welcome hero segmented mode pills
+    document.querySelectorAll(".mode-pill-btn").forEach(btn => {
+        if (btn.dataset.mode === modeKey) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
 
     const studyBar = document.getElementById("studyActionsBar");
     if (studyBar) {
@@ -1744,6 +1766,7 @@ async function triggerGeneration() {
 
     abortController = new AbortController();
     let accumulatedText = "";
+    let respondingModel = modelSelect ? modelSelect.value : "gemini-flash-lite-latest";
 
     const modeObj = AI_MODES[currentAIMode] || AI_MODES.general;
     const activeSystemPrompt = modeObj.prompt;
@@ -1824,6 +1847,7 @@ async function triggerGeneration() {
                         const parsed = JSON.parse(dataStr);
                         if (parsed.text) {
                             accumulatedText += parsed.text;
+                            if (parsed.model) respondingModel = parsed.model;
                             if (botBubble) {
                                 botBubble.innerHTML = renderMarkdown(accumulatedText) + '<span class="cursor-blink"></span>';
                             }
@@ -1849,6 +1873,7 @@ async function triggerGeneration() {
             id: "msg_" + Date.now(),
             role: "bot",
             content: accumulatedText,
+            model: respondingModel,
             feedback: null
         });
         saveSessions();
@@ -2225,9 +2250,11 @@ function setupEventListeners() {
 
     if (modelSelect) {
         modelSelect.addEventListener("change", () => {
-            const text = modelSelect.options[modelSelect.selectedIndex].text;
-            if (pillModelText) pillModelText.textContent = `✦ ${text.split('(')[0].trim()}`;
-            showToast(`Model switched to ${text.split('(')[0].trim()}`, "fa-microchip");
+            localStorage.setItem(MODEL_STORAGE_KEY, modelSelect.value);
+            const opt = modelSelect.options[modelSelect.selectedIndex];
+            const cleanName = opt ? opt.text.split('(')[0].replace(/^[^\w]+/, '').trim() : modelSelect.value;
+            if (pillModelText) pillModelText.textContent = `✦ ${cleanName}`;
+            showToast(`Active Model: ${cleanName}`, "fa-microchip");
         });
     }
 
