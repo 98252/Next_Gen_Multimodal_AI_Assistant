@@ -656,15 +656,15 @@ function updateModeUI(modeKey, notify = true) {
 
     if (userInput && !attachedFileName) {
         if (modeKey === "study") {
-            userInput.placeholder = "Ask any study topic... (e.g., Explain GSM, Make Notes on OS, Quiz me on Biology)";
+            userInput.placeholder = "Ask any study topic or paste notes...";
         } else if (modeKey === "coding") {
-            userInput.placeholder = "Describe coding problem, paste error or code to debug...";
+            userInput.placeholder = "Describe code, paste error, or request architecture...";
         } else if (modeKey === "data") {
-            userInput.placeholder = "Paste dataset, sales numbers, or ask for charts...";
+            userInput.placeholder = "Paste dataset, numbers, or ask for charts...";
         } else if (modeKey === "nepal") {
-            userInput.placeholder = "Ask about Nepal tourism, culture, history, or NPR budgets (नेपालीमा पनि सोध्न सक्नुहुन्छ)...";
+            userInput.placeholder = "Ask about Nepal tourism, culture, history, or NPR budgets...";
         } else {
-            userInput.placeholder = "Message Nepal-GPT... (Press Enter to send, Shift+Enter for newline)";
+            userInput.placeholder = "Ask anything...";
         }
     }
 
@@ -745,46 +745,104 @@ function updateSuggestionsForMode(modeKey) {
 
     if (modeKey === "study") {
         chipsContainer.innerHTML = `
-            <button class="chip" onclick="executeStudyAction('explain')">📖 Explain GSM (6-Part Framework)</button>
-            <button class="chip" onclick="executeStudyAction('notes')">📝 Make Notes: OS Deadlocks & Processes</button>
-            <button class="chip" onclick="executeStudyAction('summary')">📄 Summarize: Photosynthesis Reactions</button>
-            <button class="chip" onclick="executeStudyAction('questions')">❓ Generate Questions: DBMS Normalization</button>
-            <button class="chip" onclick="executeStudyAction('mcqs')">☑️ Generate MCQs: Python Data Structures</button>
-            <button class="chip" onclick="executeStudyAction('flashcards')">🧠 Flashcards: OSI 7-Layer Model</button>
-            <button class="chip" onclick="executeStudyAction('exam')">🎯 Exam Prep: Newton's Laws of Motion</button>
-            <button class="chip" onclick="executeStudyAction('quiz')">🔄 Quiz Me: AI & Computer Fundamentals</button>
+            <button class="starter-chip" onclick="executeStudyAction('explain')">
+                <i class="fa-solid fa-graduation-cap chip-icon"></i>
+                <span class="chip-title">Explain GSM (6-Part Framework)</span>
+            </button>
+            <button class="starter-chip" onclick="executeStudyAction('notes')">
+                <i class="fa-solid fa-book-open chip-icon"></i>
+                <span class="chip-title">Notes: OS Process Deadlocks</span>
+            </button>
+            <button class="starter-chip" onclick="executeStudyAction('questions')">
+                <i class="fa-solid fa-circle-question chip-icon"></i>
+                <span class="chip-title">Study Questions: DBMS Normalization</span>
+            </button>
+            <button class="starter-chip" onclick="executeStudyAction('quiz')">
+                <i class="fa-solid fa-arrows-rotate chip-icon"></i>
+                <span class="chip-title">Quiz Me: AI & Computer Fundamentals</span>
+            </button>
         `;
     } else if (modeKey === "coding") {
         chipsContainer.innerHTML = `
-            <button class="chip" onclick="sendPrompt('Write a Python function to debounce API calls with async support and error handling')">💻 Code: Async Python Debounce Function</button>
-            <button class="chip" onclick="sendPrompt('Explain and debug this common JavaScript Promise.all failure scenario')">🐛 Debug: JS Promise Handling</button>
+            <button class="starter-chip" onclick="sendPrompt('Write a Python function to debounce API calls with async support and error handling')">
+                <i class="fa-solid fa-code chip-icon"></i>
+                <span class="chip-title">Async Python Debounce Function</span>
+            </button>
+            <button class="starter-chip" onclick="sendPrompt('Explain and debug this common JavaScript Promise.all failure scenario')">
+                <i class="fa-solid fa-bug chip-icon"></i>
+                <span class="chip-title">Debug JavaScript Promise Handling</span>
+            </button>
+            <button class="starter-chip" onclick="sendPrompt('Write a production FastAPI architecture with JWT auth and rate limiting')">
+                <i class="fa-solid fa-server chip-icon"></i>
+                <span class="chip-title">FastAPI Architecture with JWT Auth</span>
+            </button>
+            <button class="starter-chip" onclick="sendPrompt('Explain the difference between SQL and NoSQL indexing strategies')">
+                <i class="fa-solid fa-database chip-icon"></i>
+                <span class="chip-title">SQL vs NoSQL Indexing Strategies</span>
+            </button>
         `;
     } else if (modeKey === "research") {
         chipsContainer.innerHTML = `
-            <button class="chip" onclick="sendPrompt('Provide a structured research breakdown on Quantum Computing advancements, clearly distinguishing proven facts from current theoretical assumptions')">🔬 Research: Quantum Computing Analysis</button>
-            <button class="chip" onclick="sendPrompt('Analyze the socio-economic impacts of renewable energy transition in mountainous developing countries')">📑 Research: Energy Transition Study</button>
+            <button class="starter-chip" onclick="sendPrompt('Provide a structured research breakdown on Quantum Computing advancements, clearly distinguishing proven facts from current theoretical assumptions')">
+                <i class="fa-solid fa-microscope chip-icon"></i>
+                <span class="chip-title">Quantum Computing Research Breakdown</span>
+            </button>
+            <button class="starter-chip" onclick="sendPrompt('Analyze the socio-economic impacts of renewable energy transition in mountainous developing countries')">
+                <i class="fa-solid fa-solar-panel chip-icon"></i>
+                <span class="chip-title">Renewable Energy Socio-Economic Analysis</span>
+            </button>
         `;
     } else if (modeKey === "data") {
         chipsContainer.innerHTML = `
-            <button class="chip" onclick="createSampleChart()">📊 Generate an Interactive Nepal Tourism Chart</button>
-            <button class="chip" onclick="sendPrompt('Here is dataset: Month, Sales_NPR. Jan: 45000, Feb: 62000, Mar: 78000, Apr: 95000, May: 110000. Analyze patterns and render a chart.')">📈 Analyze Sales Dataset & Generate Chart</button>
+            <button class="starter-chip" onclick="createSampleChart()">
+                <i class="fa-solid fa-chart-column chip-icon"></i>
+                <span class="chip-title">Generate Nepal Tourism Trends Chart</span>
+            </button>
+            <button class="starter-chip" onclick="sendPrompt('Here is dataset: Month, Sales_NPR. Jan: 45000, Feb: 62000, Mar: 78000, Apr: 95000, May: 110000. Analyze patterns and render a chart.')">
+                <i class="fa-solid fa-chart-line chip-icon"></i>
+                <span class="chip-title">Analyze Sales Dataset & Render Chart</span>
+            </button>
         `;
     } else if (modeKey === "nepal") {
         chipsContainer.innerHTML = `
-            <button class="chip" onclick="sendPrompt('Give a detailed itinerary for Annapurna Circuit Trek with estimated budget in NPR (रु) and best seasons')">🏔️ Annapurna Trek Guide with NPR Budget</button>
-            <button class="chip" onclick="sendPrompt('Explain the historical significance of Kathmandu Valley UNESCO World Heritage sites in natural Nepali and English')">🇳🇵 Kathmandu Heritage History</button>
+            <button class="starter-chip" onclick="sendPrompt('Give a detailed itinerary for Annapurna Circuit Trek with estimated budget in NPR (रु) and best seasons')">
+                <i class="fa-solid fa-mountain-sun chip-icon"></i>
+                <span class="chip-title">Annapurna Circuit Trek Itinerary & NPR Budget</span>
+            </button>
+            <button class="starter-chip" onclick="sendPrompt('Explain the historical significance of Kathmandu Valley UNESCO World Heritage sites in natural Nepali and English')">
+                <i class="fa-solid fa-landmark chip-icon"></i>
+                <span class="chip-title">Kathmandu Valley World Heritage Sites</span>
+            </button>
         `;
     } else if (modeKey === "document") {
         chipsContainer.innerHTML = `
-            <button class="chip" onclick="attachSampleDoc()">📄 Load a Sample Document and Query Key Points</button>
-            <button class="chip" onclick="document.getElementById('fileUploadInput').click()">📁 Upload a Text or CSV Document to Analyze</button>
+            <button class="starter-chip" onclick="attachSampleDoc()">
+                <i class="fa-solid fa-file-lines chip-icon"></i>
+                <span class="chip-title">Load Sample Hydropower Report & Summarize</span>
+            </button>
+            <button class="starter-chip" onclick="document.getElementById('fileUploadInput').click()">
+                <i class="fa-solid fa-file-arrow-up chip-icon"></i>
+                <span class="chip-title">Upload PDF, DOCX, TXT, or CSV Document</span>
+            </button>
         `;
     } else {
         chipsContainer.innerHTML = `
-            <button class="chip" onclick="createSampleChart()">📊 Generate an Interactive Nepal Tourism Chart</button>
-            <button class="chip" onclick="document.getElementById('imageUploadInput').click()">🖼️ Upload Image for Multimodal AI Vision Analysis</button>
-            <button class="chip" onclick="sendPrompt('Explain the top attractions and trekking routes in Nepal with itinerary tips')">🏔️ Nepal Trekking & Travel Guide</button>
-            <button class="chip" onclick="sendPrompt('Write a fullstack Python FastAPI and JavaScript web app with authentication')">⚡ FastAPI + JS Web App Architecture</button>
+            <button class="starter-chip" onclick="sendPrompt('Explain the top trekking routes, permits, and itinerary tips for exploring Nepal in detail.')">
+                <i class="fa-solid fa-mountain-sun chip-icon"></i>
+                <span class="chip-title">Annapurna trekking routes &amp; permits</span>
+            </button>
+            <button class="starter-chip" onclick="sendPrompt('Write a clean, production-ready Python FastAPI architecture with authentication, rate limiting, and modular structure.')">
+                <i class="fa-solid fa-code chip-icon"></i>
+                <span class="chip-title">FastAPI architecture with rate limiting</span>
+            </button>
+            <button class="starter-chip" onclick="createSampleChart()">
+                <i class="fa-solid fa-chart-column chip-icon"></i>
+                <span class="chip-title">Analyze Nepal tourism trends with chart</span>
+            </button>
+            <button class="starter-chip" onclick="document.getElementById('fileUploadInput').click()">
+                <i class="fa-solid fa-file-arrow-up chip-icon"></i>
+                <span class="chip-title">Analyze document or study notes (PDF, TXT, CSV)</span>
+            </button>
         `;
     }
 }
@@ -825,9 +883,9 @@ function setDocumentInputMode(active, fileName = "") {
 
     if (userInput) {
         if (active) {
-            userInput.placeholder = `Ask anything about ${fileName || "this document"}... (e.g., Summarize, Explain Unit 2, Find important points)`;
+            userInput.placeholder = `Ask anything about ${fileName || "this document"}...`;
         } else {
-            userInput.placeholder = "Message Nepal-GPT... (Press Enter to send, Shift+Enter for newline)";
+            userInput.placeholder = "Ask anything...";
         }
     }
 }

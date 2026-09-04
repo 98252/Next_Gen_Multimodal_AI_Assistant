@@ -18,7 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Chart.js for interactive chart rendering -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/style.css?v=9.4">
+    <link rel="stylesheet" href="/static/style.css?v=10.0">
 </head>
 <body>
     <div class="app-layout">
@@ -40,7 +40,6 @@
                         <img src="/static/logo.svg" alt="Emblem of Nepal" class="brand-logo-img">
                     </div>
                     <span class="brand-title">Nepal-GPT</span>
-                    <span class="pro-badge">PRO</span>
                 </div>
                 <button class="icon-btn close-sidebar-btn" id="toggleSidebarBtn" title="Toggle Sidebar">
                     <i class="fa-solid fa-xmark"></i>
@@ -62,7 +61,7 @@
             <!-- Search Chat History -->
             <div class="history-search-wrapper">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="historySearchInput" placeholder="Search chat history..." class="history-search-input">
+                <input type="text" id="historySearchInput" placeholder="Search chats..." class="history-search-input">
                 <button class="search-clear-btn" id="searchClearBtn" style="display: none;" title="Clear search">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -70,16 +69,16 @@
 
             <!-- AI Mode Selector -->
             <div class="mode-section">
-                <div class="section-label"><i class="fa-solid fa-brain"></i> AI MODE</div>
+                <div class="section-label"><i class="fa-solid fa-compass"></i> FOCUS MODE</div>
                 <div class="custom-select-wrapper">
                     <select id="aiModeSelect" class="mode-select">
-                        <option value="general" selected>🌐 General Assistant</option>
-                        <option value="study">📚 Study Assistant</option>
-                        <option value="coding">💻 Coding Assistant</option>
-                        <option value="research">🔬 Research Assistant</option>
-                        <option value="data">📊 Data Analyst</option>
-                        <option value="nepal">🇳🇵 Nepal Assistant</option>
-                        <option value="document">📄 Document Assistant</option>
+                        <option value="general" selected>General Assistant</option>
+                        <option value="study">Study &amp; Exam Prep</option>
+                        <option value="coding">Software &amp; Code</option>
+                        <option value="research">Deep Research</option>
+                        <option value="data">Data Analyst</option>
+                        <option value="nepal">Nepal Specialist</option>
+                        <option value="document">Document Assistant</option>
                     </select>
                     <i class="fa-solid fa-chevron-down select-arrow"></i>
                 </div>
@@ -87,15 +86,15 @@
 
             <!-- Active Model Selector -->
             <div class="model-section">
-                <div class="section-label"><i class="fa-solid fa-microchip"></i> ACTIVE MODEL</div>
+                <div class="section-label"><i class="fa-solid fa-sliders"></i> MODEL</div>
                 <div class="custom-select-wrapper">
                     <select id="modelSelect" class="model-select">
-                        <option value="gemini-flash-lite-latest" selected>⚡ Gemini Flash Lite (Fast &amp; Reliable)</option>
-                        <option value="gemini-3.6-flash">🚀 Gemini 3.6 Flash (High Performance)</option>
-                        <option value="gemini-3.5-flash">🌟 Gemini 3.5 Flash (Multimodal &amp; Vision)</option>
-                        <option value="gemini-3.5-flash-lite">💡 Gemini 3.5 Flash Lite (Smart &amp; Lightweight)</option>
-                        <option value="gemini-3.1-flash-lite">🔥 Gemini 3.1 Flash Lite (Next-Gen Speed)</option>
-                        <option value="gemini-flash-latest">🌐 Gemini Flash (Standard Multimodal)</option>
+                        <option value="gemini-flash-lite-latest" selected>Gemini Flash Lite (Default)</option>
+                        <option value="gemini-3.6-flash">Gemini 2.5 Flash</option>
+                        <option value="gemini-3.5-flash">Gemini 2.5 Pro</option>
+                        <option value="gemini-3.5-flash-lite">Gemini Flash Lite</option>
+                        <option value="gemini-3.1-flash-lite">Gemini Flash Fast</option>
+                        <option value="gemini-flash-latest">Gemini 1.5 Pro</option>
                     </select>
                     <i class="fa-solid fa-chevron-down select-arrow"></i>
                 </div>
@@ -235,73 +234,57 @@
                                 <img src="/static/logo.svg" alt="Nepal Logo" class="welcome-logo-img">
                             </div>
                         </div>
-                        <h2 class="welcome-hero-title">What would you like to explore?</h2>
+                        <h2 class="welcome-hero-title">Where knowledge begins</h2>
                         <p class="welcome-hero-sub">
-                            <span class="sub-greeting">नमस्ते!</span> Intelligent AI companion for conversation, study, coding, multimodal vision & Nepal exploration.
+                            Intelligent companion for conversation, study, code &amp; Nepal exploration
                         </p>
                         
                         <!-- Segmented Mode Pills -->
                         <div class="mode-pills-bar" id="welcomeModePills">
                             <button class="mode-pill-btn active" data-mode="general" onclick="switchAIMode('general')">
-                                <i class="fa-solid fa-earth-asia"></i> <span>General</span>
+                                <i class="fa-solid fa-compass"></i> <span>General</span>
                             </button>
                             <button class="mode-pill-btn" data-mode="study" onclick="switchAIMode('study')">
-                                <i class="fa-solid fa-book-open"></i> <span>Study</span>
+                                <i class="fa-solid fa-graduation-cap"></i> <span>Study</span>
                             </button>
                             <button class="mode-pill-btn" data-mode="coding" onclick="switchAIMode('coding')">
-                                <i class="fa-solid fa-code"></i> <span>Coding</span>
+                                <i class="fa-solid fa-code"></i> <span>Code</span>
                             </button>
                             <button class="mode-pill-btn" data-mode="research" onclick="switchAIMode('research')">
                                 <i class="fa-solid fa-microscope"></i> <span>Research</span>
                             </button>
                             <button class="mode-pill-btn" data-mode="data" onclick="switchAIMode('data')">
-                                <i class="fa-solid fa-chart-pie"></i> <span>Data Analyst</span>
+                                <i class="fa-solid fa-chart-column"></i> <span>Data</span>
                             </button>
                             <button class="mode-pill-btn" data-mode="nepal" onclick="switchAIMode('nepal')">
-                                <i class="fa-solid fa-mountain-sun"></i> <span>Nepal Special</span>
+                                <i class="fa-solid fa-mountain-sun"></i> <span>Nepal</span>
                             </button>
                             <button class="mode-pill-btn" data-mode="document" onclick="switchAIMode('document')">
-                                <i class="fa-solid fa-file-lines"></i> <span>Doc Assistant</span>
+                                <i class="fa-solid fa-file-lines"></i> <span>Docs</span>
                             </button>
                         </div>
 
-                        <!-- 2x2 Modern Suggestion Cards Grid -->
-                        <div class="suggestion-grid" id="suggestionChips">
-                            <div class="suggestion-card" onclick="sendPrompt('Explain the top attractions, trekking routes, and itinerary tips for exploring Nepal in detail.')">
-                                <div class="card-icon-box crimson"><i class="fa-solid fa-mountain-sun"></i></div>
-                                <div class="card-text-box">
-                                    <div class="card-title">Nepal Trekking & Tourism Guide</div>
-                                    <div class="card-desc">Top routes, itineraries, NPR budgets & cultural tips</div>
-                                </div>
-                                <i class="fa-solid fa-arrow-right card-arrow"></i>
-                            </div>
+                        <!-- Sleek Minimalist Starter Prompts (Card-less Capsules) -->
+                        <div class="starter-prompts-grid" id="suggestionChips">
+                            <button class="starter-chip" onclick="sendPrompt('Explain the top trekking routes, permits, and itinerary tips for exploring Nepal in detail.')">
+                                <i class="fa-solid fa-mountain-sun chip-icon"></i>
+                                <span class="chip-title">Annapurna trekking routes &amp; permits</span>
+                            </button>
 
-                            <div class="suggestion-card" onclick="createSampleChart()">
-                                <div class="card-icon-box blue"><i class="fa-solid fa-chart-column"></i></div>
-                                <div class="card-text-box">
-                                    <div class="card-title">Interactive Data Visualization</div>
-                                    <div class="card-desc">Compare tourism arrivals & trends with visual charts</div>
-                                </div>
-                                <i class="fa-solid fa-arrow-right card-arrow"></i>
-                            </div>
+                            <button class="starter-chip" onclick="sendPrompt('Write a clean, production-ready Python FastAPI architecture with authentication, rate limiting, and modular structure.')">
+                                <i class="fa-solid fa-code chip-icon"></i>
+                                <span class="chip-title">FastAPI architecture with rate limiting</span>
+                            </button>
 
-                            <div class="suggestion-card" onclick="sendPrompt('Write a production-ready Python FastAPI architecture with authentication, rate limiting, and clean folder structure.')">
-                                <div class="card-icon-box purple"><i class="fa-solid fa-code"></i></div>
-                                <div class="card-text-box">
-                                    <div class="card-title">Fullstack Engineering & Code</div>
-                                    <div class="card-desc">FastAPI backend design, bug fixing & algorithms</div>
-                                </div>
-                                <i class="fa-solid fa-arrow-right card-arrow"></i>
-                            </div>
+                            <button class="starter-chip" onclick="createSampleChart()">
+                                <i class="fa-solid fa-chart-column chip-icon"></i>
+                                <span class="chip-title">Analyze Nepal tourism trends with chart</span>
+                            </button>
 
-                            <div class="suggestion-card" onclick="document.getElementById('imageUploadInput').click()">
-                                <div class="card-icon-box emerald"><i class="fa-solid fa-eye"></i></div>
-                                <div class="card-text-box">
-                                    <div class="card-title">Multimodal AI Vision & Docs</div>
-                                    <div class="card-desc">Upload photos, diagrams or PDFs for instant analysis</div>
-                                </div>
-                                <i class="fa-solid fa-arrow-right card-arrow"></i>
-                            </div>
+                            <button class="starter-chip" onclick="document.getElementById('fileUploadInput').click()">
+                                <i class="fa-solid fa-file-arrow-up chip-icon"></i>
+                                <span class="chip-title">Analyze document or study notes (PDF, TXT, CSV)</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -407,7 +390,7 @@
                         autocorrect="off"
                         onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); handleSend(); }"
                         oninput="autoResizeTextarea()"
-                        placeholder="Message Nepal-GPT... (Press Enter to send, Shift+Enter for newline)"></textarea>
+                        placeholder="Ask anything..."></textarea>
                     
                     <div class="input-actions">
                         <button class="stop-btn" id="stopBtn" style="display: none;" onclick="handleStop()" title="Stop Generating">
@@ -419,7 +402,7 @@
                     </div>
                 </div>
                 <div class="input-disclaimer">
-                    Supports text, code, CSV/JSON data, document analysis, and multimodal image recognition via Google Gemini.
+                    Nepal-GPT can make mistakes. Verify important facts and travel advice.
                 </div>
             </footer>
         </main>
@@ -581,6 +564,6 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=9.4"></script>
+    <script src="/static/script.js?v=10.0"></script>
 </body>
 </html>
