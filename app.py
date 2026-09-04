@@ -4,13 +4,17 @@ import json
 import base64
 import csv
 import io
+import time
+import uuid
+import secrets
+import re
 from io import BytesIO
-from typing import List, Optional
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from typing import List, Optional, Dict, Any
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header, Depends
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from dotenv import load_dotenv
 
 # Ensure proper encoding on Windows
@@ -22,7 +26,7 @@ if sys.platform == "win32":
 
 load_dotenv()
 
-app = FastAPI(title="Nepal-GPT Server", version="1.0.0")
+app = FastAPI(title="Nepal-GPT Server", version="1.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,6 +38,180 @@ app.add_middleware(
 
 MAX_DOCUMENT_SIZE = 10 * 1024 * 1024  # 10 MB limit
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".csv"}
+
+# ===================================================
+# Authentication & Guest Usage Quota System
+# ===================================================
+GUEST_USAGE_LIMIT = 5  # Free queries before email login is required
+
+# In-memory storage with file persistence backup
+guest_sessions: Dict[str, Dict[str, Any]] = {}
+user_sessions: Dict[str, Dict[str, Any]] = {}
+otp_store: Dict[str, Dict[str, Any]] = {}
+
+class SendOtpRequest(BaseModel):
+    email: str
+
+class VerifyOtpRequest(BaseModel):
+    email: str
+    otp: str
+
+class QuickLoginRequest(BaseModel):
+    email: str
+    name: Optional[str] = None
+
+def normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+def is_valid_email(email: str) -> bool:
+    pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+    return bool(re.match(pattern, email.strip()))
+
+def get_user_from_token(token: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not token:
+        return None
+    clean_token = token.replace("Bearer ", "").strip()
+    return user_sessions.get(clean_token)
+
+# Auth Endpoints
+@app.post("/api/auth/send-otp")
+def send_otp(req: SendOtpRequest):
+    email = normalize_email(req.email)
+    if not is_valid_email(email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+
+    # Generate a secure 6-digit numeric OTP
+    otp = f"{secrets.randbelow(900000) + 100000}"
+    expires_at = time.time() + (10 * 60)  # 10 minutes expiry
+
+    otp_store[email] = {
+        "otp": otp,
+        "expires_at": expires_at
+    }
+
+    print(f"\n🔑 [Nepal-GPT Auth] Verification OTP for {email} is: {otp}\n")
+
+    return {
+        "status": "success",
+        "message": f"Verification code sent to {email}.",
+        "email": email,
+        "expires_in_seconds": 600,
+        "demo_otp": otp  # In demo / local dev mode, return OTP for instant testing convenience
+    }
+
+@app.post("/api/auth/verify-otp")
+def verify_otp(req: VerifyOtpRequest):
+    email = normalize_email(req.email)
+    otp = req.otp.strip()
+
+    stored = otp_store.get(email)
+    if not stored:
+        raise HTTPException(status_code=400, detail="No verification code was requested for this email.")
+
+    if time.time() > stored["expires_at"]:
+        del otp_store[email]
+        raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new one.")
+
+    if stored["otp"] != otp:
+        raise HTTPException(status_code=400, detail="Invalid verification code. Please check and try again.")
+
+    # OTP Verified - remove from store and issue session token
+    del otp_store[email]
+    token = f"ngt_{secrets.token_urlsafe(32)}"
+    username = email.split("@")[0].capitalize()
+
+    user_info = {
+        "token": token,
+        "email": email,
+        "name": username,
+        "tier": "PRO_MEMBER",
+        "logged_in_at": time.time(),
+        "total_messages": 0
+    }
+    user_sessions[token] = user_info
+
+    return {
+        "status": "success",
+        "message": "Login successful! Welcome to Nepal-GPT.",
+        "token": token,
+        "user": {
+            "email": email,
+            "name": username,
+            "tier": "PRO_MEMBER",
+            "unlimited": True
+        }
+    }
+
+@app.post("/api/auth/login")
+def quick_email_login(req: QuickLoginRequest):
+    email = normalize_email(req.email)
+    if not is_valid_email(email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+
+    token = f"ngt_{secrets.token_urlsafe(32)}"
+    name = req.name.strip() if req.name and req.name.strip() else email.split("@")[0].capitalize()
+
+    user_info = {
+        "token": token,
+        "email": email,
+        "name": name,
+        "tier": "PRO_MEMBER",
+        "logged_in_at": time.time(),
+        "total_messages": 0
+    }
+    user_sessions[token] = user_info
+
+    return {
+        "status": "success",
+        "message": f"Welcome back, {name}! Unlimited access unlocked.",
+        "token": token,
+        "user": {
+            "email": email,
+            "name": name,
+            "tier": "PRO_MEMBER",
+            "unlimited": True
+        }
+    }
+
+@app.get("/api/auth/me")
+def get_current_user_profile(
+    authorization: Optional[str] = Header(None),
+    x_guest_id: Optional[str] = Header(None)
+):
+    user = get_user_from_token(authorization)
+    if user:
+        return {
+            "is_logged_in": True,
+            "tier": "PRO_MEMBER",
+            "email": user["email"],
+            "name": user.get("name", user["email"].split("@")[0]),
+            "unlimited": True,
+            "total_messages": user.get("total_messages", 0)
+        }
+
+    # Guest user status
+    guest_id = x_guest_id or "guest_default"
+    guest_data = guest_sessions.get(guest_id, {"count": 0, "created_at": time.time()})
+    count = guest_data.get("count", 0)
+    remaining = max(0, GUEST_USAGE_LIMIT - count)
+
+    return {
+        "is_logged_in": False,
+        "tier": "GUEST",
+        "guest_id": guest_id,
+        "limit": GUEST_USAGE_LIMIT,
+        "used": count,
+        "remaining": remaining,
+        "limit_reached": count >= GUEST_USAGE_LIMIT
+    }
+
+@app.post("/api/auth/logout")
+def logout_user(authorization: Optional[str] = Header(None)):
+    if authorization:
+        clean_token = authorization.replace("Bearer ", "").strip()
+        if clean_token in user_sessions:
+            del user_sessions[clean_token]
+    return {"status": "success", "message": "Successfully logged out."}
 
 @app.post("/api/documents/extract")
 async def extract_document(file: UploadFile = File(...)):
@@ -175,6 +353,8 @@ class ChatRequest(BaseModel):
     model: Optional[str] = "gemini-flash-lite-latest"
     system_instruction: Optional[str] = "You are Nepal-GPT, an intelligent, helpful, and culturally aware AI assistant. You can converse fluently in English, Nepali (नेपाली), and other languages. Give clear, structured, and polite responses."
     response_language: Optional[str] = "auto"
+    guest_id: Optional[str] = None
+    auth_token: Optional[str] = None
 
 @app.get("/api/status")
 def get_status():
@@ -182,6 +362,7 @@ def get_status():
     return {
         "status": "connected" if api_key else "missing_key",
         "active_model": "gemini-flash-lite-latest",
+        "guest_limit": GUEST_USAGE_LIMIT,
         "models": [
             {"id": "gemini-flash-lite-latest", "name": "Gemini Flash Lite (Fast & Reliable)", "desc": "Ultra fast and cost efficient"},
             {"id": "gemini-3.5-flash-lite", "name": "Gemini 3.5 Flash Lite (Smart)", "desc": "High speed with rich multimodal capabilities"},
@@ -201,10 +382,42 @@ LANGUAGE_MAP = {
 }
 
 @app.post("/api/chat/stream")
-def stream_chat(req: ChatRequest):
+def stream_chat(
+    req: ChatRequest,
+    authorization: Optional[str] = Header(None),
+    x_guest_id: Optional[str] = Header(None)
+):
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key:
         raise HTTPException(status_code=400, detail="GEMINI_API_KEY not configured in .env file.")
+
+    # Quota and Authentication Verification
+    token = authorization or req.auth_token
+    user = get_user_from_token(token)
+
+    remaining_quota = "unlimited"
+    tier = "PRO_MEMBER" if user else "GUEST"
+
+    if user:
+        # Authenticated user has unlimited queries
+        user["total_messages"] = user.get("total_messages", 0) + 1
+    else:
+        # Guest user mode - check usage limit
+        guest_id = x_guest_id or req.guest_id or "guest_default"
+        if guest_id not in guest_sessions:
+            guest_sessions[guest_id] = {"count": 0, "created_at": time.time()}
+
+        current_count = guest_sessions[guest_id]["count"]
+        if current_count >= GUEST_USAGE_LIMIT:
+            raise HTTPException(
+                status_code=403,
+                detail="You have used all 5 free guest messages. Please sign in with your email address to continue unlimited chatting!"
+            )
+
+        # Increment message count for this guest
+        guest_sessions[guest_id]["count"] = current_count + 1
+        remaining_count = max(0, GUEST_USAGE_LIMIT - guest_sessions[guest_id]["count"])
+        remaining_quota = str(remaining_count)
 
     from google import genai
     from google.genai import types
@@ -250,7 +463,16 @@ def stream_chat(req: ChatRequest):
     selected_model = req.model if req.model and "gemini" in req.model else "gemini-flash-lite-latest"
     
     # Build enriched system instruction with strict response language preference
-    system_prompt = req.system_instruction or "You are Nepal-GPT, an intelligent, helpful, and culturally aware AI assistant."
+    base_instruction = req.system_instruction or "You are Nepal-GPT, an intelligent, helpful, and culturally aware AI assistant."
+    
+    formatting_rule = (
+        "\n\n### MANDATORY FORMATTING & RESPONSE BEHAVIOR:\n"
+        "- For all normal questions, greetings, explanations, discussions, inquiries, and factual queries, respond naturally in clean, human-readable markdown text.\n"
+        "- NEVER output unsolicited JSON chart code blocks (e.g. ```json { \"chart\": ... } ```) unless the user explicitly asks for a visual chart, graph, or dataset plot.\n"
+    )
+
+    system_prompt = base_instruction + formatting_rule
+
     if req.response_language and req.response_language.lower() in LANGUAGE_MAP:
         target_lang = LANGUAGE_MAP[req.response_language.lower()]
         system_prompt = (
@@ -259,7 +481,7 @@ def stream_chat(req: ChatRequest):
             f"You MUST formulate, write, and present your ENTIRE final response strictly in {target_lang}.\n"
             f"- If the language is Marathi, write the response in proper Marathi (मराठीत उत्तर द्या).\n"
             f"- If the language is Hindi, write the response in proper Hindi (हिन्दी में उत्तर दें).\n"
-            f"- If the language is Urdu, write the response in proper Urdu script (اردو में جواب دیں).\n"
+            f"- If the language is Urdu, write the response in proper Urdu script (اردو में जवाब दें).\n"
             f"- If the language is Maithili, write the response in proper Maithili (मैथिली भाषा मे उत्तर दिअ).\n"
             f"- If the language is Bhojpuri, write the response in proper Bhojpuri (भोजपुरी भाषा में उत्तर दीं).\n"
             f"- If the language is Nepali, write the response in proper Nepali (नेपालीमा उत्तर दिनुहोस्).\n"
@@ -326,7 +548,9 @@ def stream_chat(req: ChatRequest):
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"
+            "X-Accel-Buffering": "no",
+            "X-Remaining-Quota": str(remaining_quota),
+            "X-User-Tier": tier
         }
     )
 

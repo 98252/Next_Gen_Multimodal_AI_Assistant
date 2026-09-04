@@ -18,7 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Chart.js for interactive chart rendering -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/style.css?v=9.0">
+    <link rel="stylesheet" href="/static/style.css?v=9.2">
 </head>
 <body>
     <div class="app-layout">
@@ -111,6 +111,37 @@
 
             <!-- Sidebar Footer -->
             <div class="sidebar-footer">
+                <!-- User Account / Quota Section -->
+                <div class="account-card" id="sidebarAccountCard">
+                    <!-- Guest View -->
+                    <div class="account-guest-view" id="sidebarGuestView">
+                        <div class="guest-quota-header">
+                            <span class="quota-title"><i class="fa-solid fa-sparkles"></i> Guest Quota</span>
+                            <span class="quota-count" id="sidebarQuotaCount">5 / 5 Free</span>
+                        </div>
+                        <div class="quota-progress-track">
+                            <div class="quota-progress-bar" id="sidebarQuotaBar" style="width: 100%;"></div>
+                        </div>
+                        <button class="sidebar-auth-btn" id="sidebarLoginBtn" onclick="openAuthModal()" title="Sign in with Email for Unlimited Access">
+                            <i class="fa-solid fa-envelope"></i> Sign In with Email
+                        </button>
+                    </div>
+
+                    <!-- Logged In View -->
+                    <div class="account-user-view" id="sidebarUserView" style="display: none;">
+                        <div class="user-info-row">
+                            <div class="user-avatar" id="sidebarUserAvatar">U</div>
+                            <div class="user-meta">
+                                <span class="user-email-label" id="sidebarUserEmail">user@email.com</span>
+                                <span class="user-tier-badge"><i class="fa-solid fa-crown"></i> PRO UNLIMITED</span>
+                            </div>
+                        </div>
+                        <button class="sidebar-logout-btn" onclick="handleLogout()" title="Log out of Nepal-GPT">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                        </button>
+                    </div>
+                </div>
+
                 <button class="persona-btn" id="personaBtn" title="Customize system prompt & persona">
                     <i class="fa-solid fa-sliders"></i> Persona Instructions
                 </button>
@@ -153,6 +184,36 @@
                     </div>
                 </div>
                 <div class="header-right">
+                    <!-- Guest Quota Pill (Shown when guest) -->
+                    <div class="quota-pill" id="headerQuotaPill" title="Guest Free Message Counter" onclick="openAuthModal()">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span id="headerQuotaText">5 / 5 Free</span>
+                    </div>
+
+                    <!-- Header Auth Button (When guest) -->
+                    <button class="header-auth-btn" id="headerAuthBtn" onclick="openAuthModal()" title="Sign in with Email">
+                        <i class="fa-solid fa-envelope"></i> <span>Sign In</span>
+                    </button>
+
+                    <!-- Header User Profile Pill (When logged in) -->
+                    <div class="user-pill-wrapper" id="headerUserWrapper" style="display: none;">
+                        <div class="user-pill" id="headerUserPill" onclick="toggleUserDropdown()">
+                            <div class="user-pill-avatar" id="headerUserAvatar">U</div>
+                            <span class="user-pill-email" id="headerUserEmail">user@email.com</span>
+                            <i class="fa-solid fa-chevron-down pill-arrow"></i>
+                        </div>
+                        <div class="user-dropdown-menu" id="userDropdownMenu" style="display: none;">
+                            <div class="dropdown-header">
+                                <div class="dropdown-email" id="dropdownUserEmail">user@email.com</div>
+                                <div class="dropdown-badge"><i class="fa-solid fa-crown"></i> Pro Unlimited</div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item" onclick="handleLogout()">
+                                <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                            </button>
+                        </div>
+                    </div>
+
                     <button class="header-action-btn" id="headerNewChatBtn" onclick="createNewSession('New Chat')" title="Start New Chat">
                         <i class="fa-solid fa-plus"></i> New Chat
                     </button>
@@ -340,6 +401,133 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=9.0"></script>
+    <!-- Email Authentication Modal -->
+    <div class="modal-overlay" id="authModal" style="display: none;">
+        <div class="modal-card auth-modal-card">
+            <div class="modal-header">
+                <div class="auth-modal-title">
+                    <div class="auth-brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div>
+                        <h3 id="authModalHeader">Sign In to Nepal-GPT</h3>
+                        <p class="auth-modal-sub" id="authModalSub">Log in with your Email ID for unlimited AI chats & history</p>
+                    </div>
+                </div>
+                <button class="close-modal-btn" id="closeAuthModalBtn" onclick="closeAuthModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="modal-body auth-modal-body">
+                <!-- Step 1: Email Input Form -->
+                <div id="authStepEmail" class="auth-step-container">
+                    <div class="auth-form-group">
+                        <label for="authEmailInput"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                        <div class="auth-input-wrapper">
+                            <input 
+                                type="email" 
+                                id="authEmailInput" 
+                                placeholder="name@example.com" 
+                                autocomplete="email"
+                                spellcheck="false"
+                                onkeydown="if (event.key === 'Enter') handleRequestOtp()"
+                            />
+                        </div>
+                        <span class="auth-field-hint">No password needed. We'll send a 6-digit verification code.</span>
+                    </div>
+
+                    <div class="auth-actions-group">
+                        <button class="btn primary auth-submit-btn" id="sendOtpBtn" onclick="handleRequestOtp()">
+                            <i class="fa-solid fa-paper-plane"></i> Send Verification Code
+                        </button>
+                        <button class="btn secondary auth-quick-btn" id="quickLoginBtn" onclick="handleQuickLogin()">
+                            <i class="fa-solid fa-bolt"></i> Instant 1-Click Login
+                        </button>
+                    </div>
+
+                    <div class="auth-perks-box">
+                        <div class="perk-item"><i class="fa-solid fa-infinity"></i> <span>Unlimited Queries & Reasoning</span></div>
+                        <div class="perk-item"><i class="fa-solid fa-brain"></i> <span>All 7 Special AI Modes</span></div>
+                        <div class="perk-item"><i class="fa-solid fa-cloud"></i> <span>Saved History & Multimodal Uploads</span></div>
+                    </div>
+                </div>
+
+                <!-- Step 2: OTP Verification Form -->
+                <div id="authStepOtp" class="auth-step-container" style="display: none;">
+                    <div class="otp-sent-info">
+                        <i class="fa-solid fa-circle-check info-icon"></i>
+                        <div>
+                            <span>Code sent to <b id="otpEmailTarget">user@example.com</b></span>
+                            <button class="change-email-btn" onclick="goToAuthStep('email')">Change</button>
+                        </div>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label for="otpCodeInput"><i class="fa-solid fa-key"></i> 6-Digit Verification Code</label>
+                        <div class="auth-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="otpCodeInput" 
+                                class="otp-input-field" 
+                                placeholder="• • • • • •" 
+                                maxlength="6"
+                                autocomplete="one-time-code"
+                                onkeydown="if (event.key === 'Enter') handleVerifyOtp()"
+                            />
+                        </div>
+                        <div class="demo-otp-banner" id="demoOtpBanner" style="display: none;">
+                            <span class="demo-badge">DEV CODE</span>
+                            <span>Auto-generated OTP: <b id="demoOtpValue">123456</b></span>
+                            <button class="auto-fill-btn" onclick="autoFillOtp()">Auto-Fill</button>
+                        </div>
+                    </div>
+
+                    <div class="auth-actions-group">
+                        <button class="btn primary auth-submit-btn" id="verifyOtpBtn" onclick="handleVerifyOtp()">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i> Verify & Sign In
+                        </button>
+                        <div class="resend-wrapper">
+                            <span>Didn't receive code?</span>
+                            <button class="resend-link" id="resendOtpBtn" onclick="handleRequestOtp()">Resend Code</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Limit Reached Modal -->
+    <div class="modal-overlay" id="limitModal" style="display: none;">
+        <div class="modal-card limit-modal-card">
+            <div class="limit-modal-header">
+                <div class="limit-icon-circle">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h3>Guest Limit Reached</h3>
+                <p>You have used your <b>5 free guest queries</b>. Please sign in with your Email ID to unlock unlimited access!</p>
+            </div>
+            
+            <div class="limit-features-list">
+                <div class="limit-feature-item">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <div><b>100% Free Forever</b> with your email</div>
+                </div>
+                <div class="limit-feature-item">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <div><b>Unlimited Messages</b> & Deep Reasoning</div>
+                </div>
+                <div class="limit-feature-item">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <div><b>Multimodal Vision</b> & Document Analysis</div>
+                </div>
+            </div>
+
+            <div class="modal-footer limit-modal-footer">
+                <button class="btn secondary" onclick="closeLimitModal()">Later</button>
+                <button class="btn primary" onclick="closeLimitModal(); openAuthModal();">
+                    <i class="fa-solid fa-envelope"></i> Sign In with Email
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js?v=9.2"></script>
 </body>
 </html>

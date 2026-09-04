@@ -7,7 +7,33 @@ const STORAGE_KEY = "nepal_gpt_sessions_v5";
 const MODE_STORAGE_KEY = "nepal_gpt_aimode_v5";
 const LANG_STORAGE_KEY = "nepal_gpt_lang_pref";
 
+// Auth & Quota Storage Keys
+const AUTH_TOKEN_KEY = "nepal_gpt_auth_token_v1";
+const USER_INFO_KEY = "nepal_gpt_user_info_v1";
+const GUEST_ID_KEY = "nepal_gpt_guest_id_v1";
+const GUEST_COUNT_KEY = "nepal_gpt_guest_count_v1";
+
 let currentResponseLanguage = localStorage.getItem(LANG_STORAGE_KEY) || "auto";
+
+// Auth & Guest Quota State
+let authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null;
+let currentUser = null;
+try {
+    currentUser = JSON.parse(localStorage.getItem(USER_INFO_KEY) || "null");
+} catch (e) {
+    currentUser = null;
+}
+
+let guestId = localStorage.getItem(GUEST_ID_KEY);
+if (!guestId) {
+    guestId = "guest_" + Math.random().toString(36).substring(2, 11);
+    localStorage.setItem(GUEST_ID_KEY, guestId);
+}
+
+let guestUsedCount = parseInt(localStorage.getItem(GUEST_COUNT_KEY) || "0", 10);
+let guestLimit = 5;
+let requestedOtpEmail = "";
+let demoOtpCode = "";
 
 // AI Mode System Prompts with strict role instructions
 const AI_MODES = {
@@ -19,7 +45,7 @@ const AI_MODES = {
 Follow these rules:
 - Provide direct, clear, natural, and well-structured answers according to the user's specific question.
 - Do NOT introduce yourself with specialized personas (e.g., do not roleplay as a Data Analyst or Professor).
-- Do NOT generate unsolicited code charts or JSON visualization blocks for simple conversational or factual questions (e.g., "what is computer").
+- NEVER generate JSON code blocks or chart structures (e.g., \`\`\`json { "chart": ... } \`\`\`) unless the user explicitly uses words like "chart", "graph", "plot", or "visualize". For normal questions (facts, history, general info, explanations, advice), provide standard conversational markdown text only.
 - Maintain a friendly, concise, natural, and helpful tone.`
     },
     study: {
@@ -27,35 +53,10 @@ Follow these rules:
         icon: "fa-book-open",
         emoji: "📚",
         prompt: `You are Nepal-GPT acting as an elite Professor, Study Assistant, and Exam Coach.
-
-### 📚 CORE STUDY FRAMEWORK:
-When explaining a concept, technology, or topic (e.g., "Explain GSM", "Explain Photosynthesis", "Explain OOP", "Explain Unit 2"), ALWAYS structure your response with these exact 6 sections:
-1. 💡 **Simple Definition**: Clear, beginner-friendly intuition and high-level concept.
-2. ⚙️ **Main Components / Architecture**: Bulleted list of the core sub-systems, blocks, or elements.
-3. 🔄 **Working / Mechanism**: Step-by-step breakdown of how it operates in real life.
-4. 🌟 **Advantages & Benefits**: Key strengths and why it is important.
-5. 🌍 **Real-World Example & Analogy**: Relatable analogy and practical daily life application.
-6. 📝 **Exam-Ready Answer**: High-scoring formal model answer with bolded keywords, definitions, and point breakdowns.
-
-### 🛠️ STUDY MODE ACTION RULES:
-- **📖 EXPLAIN TOPIC**: Apply the 6-part framework above.
-- **📝 MAKE NOTES**: High-yield revision bullet points, tables, and memory mnemonics.
-- **📄 SUMMARIZE**: Concise TL;DR, core takeaways, and executive summary.
-- **❓ GENERATE QUESTIONS**: Conceptual, short-answer, and analytical discussion questions.
-- **☑️ GENERATE MCQs**: 5 multiple-choice questions with options (A, B, C, D), answer keys, and explanations.
-- **🧠 FLASHCARDS**: Concept flashcards formatted clearly with Front (Concept) and Back (Insight).
-- **🎯 EXAM PREPARATION**: 2-mark, 5-mark, and 10-mark model questions with grading rubrics.
-- **🔄 QUIZ ME (INTERACTIVE TURN-BY-TURN QUIZ)**:
-  * Ask ONE question at a time (e.g. "Question 1 of 5").
-  * Do NOT give the answer immediately. Wait for the user's reply.
-  * When the user answers, evaluate:
-    - 🎯 **Evaluation**: ✅ Correct or ❌ Incorrect
-    - 💡 **Explanation**: Why the chosen answer is right/wrong with detailed context
-    - 📊 **Current Score**: Maintain running score (e.g., Score: 1/1)
-    - ➡️ **Next Question**: Present the next question (Question N of 5)
-  * When the quiz concludes, display:
-    - 🏆 **Final Score Summary & Grade**
-    - 🌟 Strengths & Topic Areas to Review.`
+Follow these rules:
+- When asked a study or exam concept (e.g., "Explain GSM", "Explain Photosynthesis", "Explain OOP"), structure your response cleanly with Simple Definition, Main Components, Working, Advantages, Real-World Example, and Exam-Ready Answer.
+- For simple casual questions or greetings, answer directly and concisely in natural text.
+- Do NOT generate unsolicited JSON charts.`
     },
     coding: {
         name: "Coding Assistant",
@@ -67,7 +68,6 @@ Follow these rules:
 - Find bugs, identify syntax/logic errors, and explain their root cause
 - Fix errors and provide complete, corrected, and production-ready code
 - Generate clean, modular, performant, and well-commented code
-- Explain solutions, design patterns, and architectural trade-offs
 - Always use proper language tags on code blocks (e.g., \`\`\`python, \`\`\`javascript).`
     },
     research: {
@@ -76,10 +76,9 @@ Follow these rules:
         emoji: "🔬",
         prompt: `You are Nepal-GPT acting as a rigorous Academic & Industry Research Assistant.
 Follow these rules:
-- Give detailed, in-depth, and well-researched explanations
+- Give detailed, in-depth, and well-researched explanations in clean structured text.
 - Organize information logically with structured sections (Context, Key Findings, Methodology, Implications)
-- Clearly and explicitly distinguish established empirical facts from assumptions, hypotheses, or theoretical speculations
-- Highlight limitations, nuances, and balanced perspectives.`
+- Clearly distinguish established empirical facts from assumptions or theoretical speculations.`
     },
     data: {
         name: "Data Analyst",
@@ -87,7 +86,7 @@ Follow these rules:
         emoji: "📊",
         prompt: `You are Nepal-GPT acting as an expert Data Analyst.
 Follow these rules:
-- When the user provides a dataset, numerical table, sales figures, or explicitly asks for a chart/visualization, analyze the data and provide visual charts using JSON code blocks in this exact format:
+- ONLY generate a chart JSON block when the user EXPLICITLY asks to create a chart/graph or provides a table/dataset to plot:
 \`\`\`json
 {
   "chart": {
@@ -103,7 +102,7 @@ Follow these rules:
   }
 }
 \`\`\`
-- For general conceptual or conversational questions that do NOT contain datasets or requests for charts, provide a clear, normal explanation without forcing unnecessary charts.`
+- For general, factual, historical, or conversational questions that do NOT explicitly request charts, provide normal clear text explanations without any JSON charts.`
     },
     nepal: {
         name: "Nepal Assistant",
@@ -111,10 +110,10 @@ Follow these rules:
         emoji: "🇳🇵",
         prompt: `You are Nepal-GPT acting as a specialized Nepal & Cultural Expert.
 Follow these rules:
-- Focus deeply on Nepal-related context (geography, culture, history, laws, tourism, governance, lifestyle)
-- Understand and naturally use Nepal-specific terminology in English and Nepali (नेपाली शब्दहरू)
-- Always use Nepalese Rupees (NPR / रु) where appropriate for prices, economy, budget estimates, or currency
-- Converse fluently in both English and Nepali (नेपाली).`
+- Focus deeply on Nepal-related context (geography, culture, history, laws, tourism, governance, lifestyle).
+- Provide clean, natural, and conversational responses in Nepali or English.
+- NEVER generate unsolicited JSON code blocks or chart structures. Provide regular text explanations.
+- Always use Nepalese Rupees (NPR / रु) where appropriate for prices, economy, budget estimates, or currency.`
     },
     document: {
         name: "Document Assistant",
@@ -192,10 +191,22 @@ window.handleStop = handleStop;
 window.autoResizeTextarea = autoResizeTextarea;
 window.switchAIMode = switchAIMode;
 window.createNewSession = createNewSession;
+window.openAuthModal = openAuthModal;
+window.closeAuthModal = closeAuthModal;
+window.openLimitModal = openLimitModal;
+window.closeLimitModal = closeLimitModal;
+window.goToAuthStep = goToAuthStep;
+window.handleRequestOtp = handleRequestOtp;
+window.handleVerifyOtp = handleVerifyOtp;
+window.handleQuickLogin = handleQuickLogin;
+window.handleLogout = handleLogout;
+window.toggleUserDropdown = toggleUserDropdown;
+window.autoFillOtp = autoFillOtp;
 
 // Initialize application
 function initApp() {
     initToastContainer();
+    initAuth();
     loadSessions();
     setupEventListeners();
     setupDragAndDrop();
@@ -209,6 +220,361 @@ function initApp() {
 
     if (userInput) {
         userInput.addEventListener("input", autoResizeTextarea);
+    }
+}
+
+// ===================================================
+// Authentication & Guest Quota Management
+// ===================================================
+async function initAuth() {
+    updateAuthUI();
+    await syncAuthStatus();
+}
+
+async function syncAuthStatus() {
+    try {
+        const headers = {};
+        if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+        if (guestId) headers["X-Guest-Id"] = guestId;
+
+        const res = await fetch("/api/auth/me", { headers });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.is_logged_in) {
+                currentUser = {
+                    email: data.email,
+                    name: data.name,
+                    tier: data.tier,
+                    unlimited: true
+                };
+                localStorage.setItem(USER_INFO_KEY, JSON.stringify(currentUser));
+            } else {
+                currentUser = null;
+                localStorage.removeItem(USER_INFO_KEY);
+                if (data.used !== undefined) {
+                    guestUsedCount = data.used;
+                    localStorage.setItem(GUEST_COUNT_KEY, guestUsedCount.toString());
+                }
+                if (data.limit !== undefined) {
+                    guestLimit = data.limit;
+                }
+            }
+            updateAuthUI();
+        }
+    } catch (e) {
+        console.warn("Could not sync auth status:", e);
+    }
+}
+
+function updateAuthUI() {
+    const isLoggedIn = !!(authToken && currentUser);
+
+    // Header UI elements
+    const headerQuotaPill = document.getElementById("headerQuotaPill");
+    const headerAuthBtn = document.getElementById("headerAuthBtn");
+    const headerUserWrapper = document.getElementById("headerUserWrapper");
+    const headerUserAvatar = document.getElementById("headerUserAvatar");
+    const headerUserEmail = document.getElementById("headerUserEmail");
+    const dropdownUserEmail = document.getElementById("dropdownUserEmail");
+    const headerQuotaText = document.getElementById("headerQuotaText");
+
+    // Sidebar UI elements
+    const sidebarGuestView = document.getElementById("sidebarGuestView");
+    const sidebarUserView = document.getElementById("sidebarUserView");
+    const sidebarUserAvatar = document.getElementById("sidebarUserAvatar");
+    const sidebarUserEmail = document.getElementById("sidebarUserEmail");
+    const sidebarQuotaCount = document.getElementById("sidebarQuotaCount");
+    const sidebarQuotaBar = document.getElementById("sidebarQuotaBar");
+
+    const remaining = Math.max(0, guestLimit - guestUsedCount);
+
+    if (isLoggedIn) {
+        // Logged-in view
+        const email = currentUser.email || "user@email.com";
+        const initial = (currentUser.name || email)[0].toUpperCase();
+
+        if (headerQuotaPill) headerQuotaPill.style.display = "none";
+        if (headerAuthBtn) headerAuthBtn.style.display = "none";
+        if (headerUserWrapper) headerUserWrapper.style.display = "block";
+        if (headerUserAvatar) headerUserAvatar.textContent = initial;
+        if (headerUserEmail) headerUserEmail.textContent = email;
+        if (dropdownUserEmail) dropdownUserEmail.textContent = email;
+
+        if (sidebarGuestView) sidebarGuestView.style.display = "none";
+        if (sidebarUserView) sidebarUserView.style.display = "block";
+        if (sidebarUserAvatar) sidebarUserAvatar.textContent = initial;
+        if (sidebarUserEmail) sidebarUserEmail.textContent = email;
+
+    } else {
+        // Guest mode view
+        if (headerUserWrapper) headerUserWrapper.style.display = "none";
+        if (headerAuthBtn) headerAuthBtn.style.display = "flex";
+        if (headerQuotaPill) {
+            headerQuotaPill.style.display = "flex";
+            if (headerQuotaText) headerQuotaText.textContent = `${remaining} / ${guestLimit} Free`;
+            if (remaining <= 1) {
+                headerQuotaPill.classList.add("quota-low");
+            } else {
+                headerQuotaPill.classList.remove("quota-low");
+            }
+        }
+
+        if (sidebarUserView) sidebarUserView.style.display = "none";
+        if (sidebarGuestView) sidebarGuestView.style.display = "block";
+
+        if (sidebarQuotaCount) {
+            sidebarQuotaCount.textContent = `${remaining} / ${guestLimit} Free`;
+        }
+        if (sidebarQuotaBar) {
+            const pct = Math.max(0, Math.min(100, (remaining / guestLimit) * 100));
+            sidebarQuotaBar.style.width = `${pct}%`;
+        }
+    }
+}
+
+function openAuthModal(email = "") {
+    const authModal = document.getElementById("authModal");
+    const authEmailInput = document.getElementById("authEmailInput");
+    if (!authModal) return;
+
+    goToAuthStep("email");
+    if (email && authEmailInput) {
+        authEmailInput.value = email;
+    }
+    authModal.style.display = "flex";
+    if (authEmailInput) {
+        setTimeout(() => authEmailInput.focus(), 50);
+    }
+}
+
+function closeAuthModal() {
+    const authModal = document.getElementById("authModal");
+    if (authModal) authModal.style.display = "none";
+}
+
+function openLimitModal() {
+    const limitModal = document.getElementById("limitModal");
+    if (limitModal) limitModal.style.display = "flex";
+}
+
+function closeLimitModal() {
+    const limitModal = document.getElementById("limitModal");
+    if (limitModal) limitModal.style.display = "none";
+}
+
+function goToAuthStep(step) {
+    const stepEmail = document.getElementById("authStepEmail");
+    const stepOtp = document.getElementById("authStepOtp");
+    const modalHeader = document.getElementById("authModalHeader");
+    const modalSub = document.getElementById("authModalSub");
+
+    if (step === "email") {
+        if (stepEmail) stepEmail.style.display = "block";
+        if (stepOtp) stepOtp.style.display = "none";
+        if (modalHeader) modalHeader.textContent = "Sign In to Nepal-GPT";
+        if (modalSub) modalSub.textContent = "Log in with your Email ID for unlimited AI chats & history";
+        const emailInput = document.getElementById("authEmailInput");
+        if (emailInput) setTimeout(() => emailInput.focus(), 50);
+    } else if (step === "otp") {
+        if (stepEmail) stepEmail.style.display = "none";
+        if (stepOtp) stepOtp.style.display = "block";
+        if (modalHeader) modalHeader.textContent = "Enter Verification Code";
+        if (modalSub) modalSub.textContent = `Check your inbox at ${requestedOtpEmail}`;
+        const otpInput = document.getElementById("otpCodeInput");
+        if (otpInput) {
+            otpInput.value = "";
+            setTimeout(() => otpInput.focus(), 50);
+        }
+    }
+}
+
+async function handleRequestOtp() {
+    const emailInput = document.getElementById("authEmailInput");
+    const email = (emailInput ? emailInput.value : "").trim().toLowerCase();
+
+    if (!email || !email.includes("@") || !email.includes(".")) {
+        showToast("Please enter a valid email address.", "fa-triangle-exclamation");
+        if (emailInput) emailInput.focus();
+        return;
+    }
+
+    const sendOtpBtn = document.getElementById("sendOtpBtn");
+    if (sendOtpBtn) {
+        sendOtpBtn.disabled = true;
+        sendOtpBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending code...`;
+    }
+
+    try {
+        const res = await fetch("/api/auth/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || "Failed to send verification code.");
+        }
+
+        requestedOtpEmail = email;
+        const targetEl = document.getElementById("otpEmailTarget");
+        if (targetEl) targetEl.textContent = email;
+
+        // In dev / demo mode, show the generated code for instant testing
+        if (data.demo_otp) {
+            demoOtpCode = data.demo_otp;
+            const banner = document.getElementById("demoOtpBanner");
+            const valEl = document.getElementById("demoOtpValue");
+            if (banner && valEl) {
+                valEl.textContent = demoOtpCode;
+                banner.style.display = "flex";
+            }
+        }
+
+        goToAuthStep("otp");
+        showToast(`Verification code sent to ${email}`, "fa-paper-plane");
+
+    } catch (err) {
+        showToast(err.message || "Failed to send OTP", "fa-triangle-exclamation");
+    } finally {
+        if (sendOtpBtn) {
+            sendOtpBtn.disabled = false;
+            sendOtpBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Send Verification Code`;
+        }
+    }
+}
+
+function autoFillOtp() {
+    const otpInput = document.getElementById("otpCodeInput");
+    if (otpInput && demoOtpCode) {
+        otpInput.value = demoOtpCode;
+        handleVerifyOtp();
+    }
+}
+
+async function handleVerifyOtp() {
+    const otpInput = document.getElementById("otpCodeInput");
+    const otp = (otpInput ? otpInput.value : "").trim();
+
+    if (!otp || otp.length < 4) {
+        showToast("Please enter the verification code.", "fa-triangle-exclamation");
+        if (otpInput) otpInput.focus();
+        return;
+    }
+
+    const verifyBtn = document.getElementById("verifyOtpBtn");
+    if (verifyBtn) {
+        verifyBtn.disabled = true;
+        verifyBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying...`;
+    }
+
+    try {
+        const res = await fetch("/api/auth/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: requestedOtpEmail, otp })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || "Verification failed. Invalid code.");
+        }
+
+        authToken = data.token;
+        currentUser = data.user;
+        localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+        localStorage.setItem(USER_INFO_KEY, JSON.stringify(currentUser));
+
+        closeAuthModal();
+        closeLimitModal();
+        updateAuthUI();
+        showToast(`Welcome back, ${currentUser.name || currentUser.email}! Unlimited chats enabled 🎉`, "fa-circle-check");
+
+    } catch (err) {
+        showToast(err.message || "Verification error", "fa-triangle-exclamation");
+    } finally {
+        if (verifyBtn) {
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = `<i class="fa-solid fa-arrow-right-to-bracket"></i> Verify & Sign In`;
+        }
+    }
+}
+
+async function handleQuickLogin() {
+    const emailInput = document.getElementById("authEmailInput");
+    const email = (emailInput ? emailInput.value : "").trim().toLowerCase();
+
+    if (!email || !email.includes("@") || !email.includes(".")) {
+        showToast("Please enter your email address to log in.", "fa-triangle-exclamation");
+        if (emailInput) emailInput.focus();
+        return;
+    }
+
+    const quickBtn = document.getElementById("quickLoginBtn");
+    if (quickBtn) {
+        quickBtn.disabled = true;
+        quickBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Signing in...`;
+    }
+
+    try {
+        const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || "Login failed.");
+        }
+
+        authToken = data.token;
+        currentUser = data.user;
+        localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+        localStorage.setItem(USER_INFO_KEY, JSON.stringify(currentUser));
+
+        closeAuthModal();
+        closeLimitModal();
+        updateAuthUI();
+        showToast(`Signed in as ${currentUser.email}! Unlimited chats unlocked 🚀`, "fa-circle-check");
+
+    } catch (err) {
+        showToast(err.message || "Sign in failed", "fa-triangle-exclamation");
+    } finally {
+        if (quickBtn) {
+            quickBtn.disabled = false;
+            quickBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Instant 1-Click Login`;
+        }
+    }
+}
+
+async function handleLogout() {
+    try {
+        if (authToken) {
+            await fetch("/api/auth/logout", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${authToken}` }
+            });
+        }
+    } catch (e) {}
+
+    authToken = null;
+    currentUser = null;
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(USER_INFO_KEY);
+
+    const dropdown = document.getElementById("userDropdownMenu");
+    if (dropdown) dropdown.style.display = "none";
+
+    updateAuthUI();
+    showToast("Signed out successfully. Guest mode active.", "fa-arrow-right-from-bracket");
+}
+
+function toggleUserDropdown(e) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById("userDropdownMenu");
+    if (dropdown) {
+        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
     }
 }
 
@@ -1314,6 +1680,13 @@ async function handleSend() {
     if (!text && !attachedImageData && !attachedFileContent) return;
     if (isGenerating) return;
 
+    // Check if guest has exceeded the usage limit
+    if (!authToken && guestUsedCount >= guestLimit) {
+        openLimitModal();
+        showToast("Free guest limit reached (5/5). Please sign in with your email to continue!", "fa-lock");
+        return;
+    }
+
     let sendingImageData = attachedImageData;
     let sendingFileName = attachedFileName;
     let sendingFileSize = attachedFileSize;
@@ -1389,21 +1762,43 @@ async function triggerGeneration() {
         const langDropdown = document.getElementById("responseLangSelect");
         const activeLang = langDropdown ? langDropdown.value : (currentResponseLanguage || "auto");
 
+        const requestHeaders = {
+            "Content-Type": "application/json"
+        };
+        if (authToken) {
+            requestHeaders["Authorization"] = `Bearer ${authToken}`;
+        }
+        if (guestId) {
+            requestHeaders["X-Guest-Id"] = guestId;
+        }
+
         const response = await fetch("/api/chat/stream", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: requestHeaders,
             body: JSON.stringify({
                 messages: validMessages,
                 model: modelSelect ? modelSelect.value : "gemini-flash-lite-latest",
                 system_instruction: activeSystemPrompt,
-                response_language: activeLang
+                response_language: activeLang,
+                guest_id: guestId,
+                auth_token: authToken
             }),
             signal: abortController.signal
         });
 
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || `Server error (${response.status})`);
+            const detailMsg = typeof errData.detail === "string" ? errData.detail : (errData.detail?.message || `Server error (${response.status})`);
+            
+            if (response.status === 403 || detailMsg.toLowerCase().includes("guest messages")) {
+                guestUsedCount = guestLimit;
+                localStorage.setItem(GUEST_COUNT_KEY, guestUsedCount.toString());
+                updateAuthUI();
+                openLimitModal();
+                throw new Error("Guest message limit reached. Please sign in with your email to continue.");
+            }
+
+            throw new Error(detailMsg || `Server error (${response.status})`);
         }
 
         const reader = response.body.getReader();
@@ -1458,6 +1853,13 @@ async function triggerGeneration() {
         });
         saveSessions();
         renderMessages();
+
+        // Increment guest quota usage on successful response
+        if (!authToken) {
+            guestUsedCount = Math.min(guestLimit, guestUsedCount + 1);
+            localStorage.setItem(GUEST_COUNT_KEY, guestUsedCount.toString());
+            updateAuthUI();
+        }
 
     } catch (err) {
         if (err.name === "AbortError") {
@@ -1869,6 +2271,48 @@ function setupEventListeners() {
         resetPersonaBtn.addEventListener("click", () => {
             if (personaPrompt) personaPrompt.value = AI_MODES[currentAIMode].prompt;
             showToast("Instructions reset to mode default", "fa-rotate-left");
+        });
+    }
+
+    // Explicit Auth & Modal Button Listeners
+    const headerAuthBtn = document.getElementById("headerAuthBtn");
+    if (headerAuthBtn) headerAuthBtn.addEventListener("click", () => openAuthModal());
+
+    const sidebarLoginBtn = document.getElementById("sidebarLoginBtn");
+    if (sidebarLoginBtn) sidebarLoginBtn.addEventListener("click", () => openAuthModal());
+
+    const headerQuotaPill = document.getElementById("headerQuotaPill");
+    if (headerQuotaPill) headerQuotaPill.addEventListener("click", () => openAuthModal());
+
+    const closeAuthModalBtn = document.getElementById("closeAuthModalBtn");
+    if (closeAuthModalBtn) closeAuthModalBtn.addEventListener("click", () => closeAuthModal());
+
+    // Close user dropdown and modal on clicking outside
+    document.addEventListener("click", (e) => {
+        const dropdown = document.getElementById("userDropdownMenu");
+        const userPill = document.getElementById("headerUserPill");
+        if (dropdown && dropdown.style.display === "block") {
+            if (!dropdown.contains(e.target) && (!userPill || !userPill.contains(e.target))) {
+                dropdown.style.display = "none";
+            }
+        }
+    });
+
+    const authModal = document.getElementById("authModal");
+    if (authModal) {
+        authModal.addEventListener("click", (e) => {
+            if (e.target === authModal) {
+                closeAuthModal();
+            }
+        });
+    }
+
+    const limitModal = document.getElementById("limitModal");
+    if (limitModal) {
+        limitModal.addEventListener("click", (e) => {
+            if (e.target === limitModal) {
+                closeLimitModal();
+            }
         });
     }
 }
