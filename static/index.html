@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,11 +9,14 @@
     <!-- Modern Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=Mukta:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Highlight.js for code syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <!-- Marked.js for markdown rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -20,6 +24,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/style.css?v=10.0">
 </head>
+
 <body>
     <div class="app-layout">
         <!-- Drag and Drop Overlay Indicator -->
@@ -48,11 +53,13 @@
 
             <!-- Action Buttons: New Chat & New Chart -->
             <div class="sidebar-actions">
-                <button class="new-chat-btn primary-action" id="newChatBtn" onclick="createNewSession('New Chat')" title="Start a fresh conversation (Ctrl+K)">
+                <button class="new-chat-btn primary-action" id="newChatBtn" onclick="createNewSession('New Chat')"
+                    title="Start a fresh conversation (Ctrl+K)">
                     <span class="btn-text"><i class="fa-solid fa-plus"></i> New Chat</span>
                     <span class="shortcut-key">Ctrl+K</span>
                 </button>
-                <button class="new-chart-btn" id="newChartBtn" onclick="createSampleChart()" title="Generate an interactive visual chart">
+                <button class="new-chart-btn" id="newChartBtn" onclick="createSampleChart()"
+                    title="Generate an interactive visual chart">
                     <span class="btn-text"><i class="fa-solid fa-chart-pie"></i> New Chart</span>
                     <span class="badge-feature">AI Viz</span>
                 </button>
@@ -88,13 +95,10 @@
             <div class="model-section">
                 <div class="section-label"><i class="fa-solid fa-sliders"></i> MODEL</div>
                 <div class="custom-select-wrapper">
-                    <select id="modelSelect" class="model-select">
-                        <option value="gemini-flash-lite-latest" selected>Gemini Flash Lite (Default)</option>
-                        <option value="gemini-3.6-flash">Gemini 2.5 Flash</option>
-                        <option value="gemini-3.5-flash">Gemini 2.5 Pro</option>
-                        <option value="gemini-3.5-flash-lite">Gemini Flash Lite</option>
-                        <option value="gemini-3.1-flash-lite">Gemini Flash Fast</option>
-                        <option value="gemini-flash-latest">Gemini 1.5 Pro</option>
+                    <select id="modelSelect" class="model-select" title="Select AI Model">
+                        <option value="gemini-flash-lite-latest" selected>Gemini Flash Lite (Fast &amp; Smart)</option>
+                        <option value="gemini-3.6-flash">Gemini 3.6 Flash (High Intelligence)</option>
+                        <option value="gemini-flash-latest">Gemini Flash (Multimodal &amp; Vision)</option>
                     </select>
                     <i class="fa-solid fa-chevron-down select-arrow"></i>
                 </div>
@@ -104,7 +108,8 @@
             <div class="recent-chats-section">
                 <div class="recent-header">
                     <span class="section-label"><i class="fa-solid fa-clock-rotate-left"></i> CHAT HISTORY</span>
-                    <button class="clear-all-btn" id="clearHistoryBtn" onclick="clearAllHistory()" title="Clear all saved chats">Clear All</button>
+                    <button class="clear-all-btn" id="clearHistoryBtn" onclick="clearAllHistory()"
+                        title="Clear all saved chats">Clear All</button>
                 </div>
                 <div class="chats-list" id="chatsList">
                     <!-- Dynamic chat session history items grouped by date & pinned -->
@@ -124,7 +129,8 @@
                         <div class="quota-progress-track">
                             <div class="quota-progress-bar" id="sidebarQuotaBar" style="width: 100%;"></div>
                         </div>
-                        <button class="sidebar-auth-btn" id="sidebarLoginBtn" onclick="openAuthModal()" title="Sign in with Email for Unlimited Access">
+                        <button class="sidebar-auth-btn" id="sidebarLoginBtn" onclick="openAuthModal()"
+                            title="Sign in with Email for Unlimited Access">
                             <i class="fa-solid fa-envelope"></i> Sign In with Email
                         </button>
                     </div>
@@ -162,17 +168,19 @@
                     <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn" title="Open Sidebar">
                         <i class="fa-solid fa-bars"></i>
                     </button>
-                    
+
                     <!-- Editable Title Container -->
                     <div class="chat-title-container" id="chatTitleContainer" title="Click to Rename this Chat">
                         <h1 class="chat-title" id="chatTitle">Namaste 🙏</h1>
                         <i class="fa-solid fa-pen header-title-edit-icon"></i>
                     </div>
 
-                    <button class="header-pin-btn" id="headerPinBtn" onclick="if (currentSessionId) togglePinSession(currentSessionId)" title="Pin / Unpin this Chat">
+                    <button class="header-pin-btn" id="headerPinBtn"
+                        onclick="if (currentSessionId) togglePinSession(currentSessionId)"
+                        title="Pin / Unpin this Chat">
                         <i class="fa-solid fa-thumbtack"></i>
                     </button>
-                    
+
                     <!-- AI Mode Pill Badge -->
                     <div class="mode-pill" id="activeModePill" title="Current AI Mode">
                         <i class="fa-solid fa-brain"></i>
@@ -187,13 +195,15 @@
                 </div>
                 <div class="header-right">
                     <!-- Guest Quota Pill (Shown when guest) -->
-                    <div class="quota-pill" id="headerQuotaPill" title="Guest Free Message Counter" onclick="openAuthModal()">
+                    <div class="quota-pill" id="headerQuotaPill" title="Guest Free Message Counter"
+                        onclick="openAuthModal()">
                         <i class="fa-solid fa-bolt"></i>
                         <span id="headerQuotaText">5 / 5 Free</span>
                     </div>
 
                     <!-- Header Auth Button (When guest) -->
-                    <button class="header-auth-btn" id="headerAuthBtn" onclick="openAuthModal()" title="Sign in with Email">
+                    <button class="header-auth-btn" id="headerAuthBtn" onclick="openAuthModal()"
+                        title="Sign in with Email">
                         <i class="fa-solid fa-envelope"></i> <span>Sign In</span>
                     </button>
 
@@ -216,7 +226,8 @@
                         </div>
                     </div>
 
-                    <button class="header-action-btn" id="headerNewChatBtn" onclick="createNewSession('New Chat')" title="Start New Chat">
+                    <button class="header-action-btn" id="headerNewChatBtn" onclick="createNewSession('New Chat')"
+                        title="Start New Chat">
                         <i class="fa-solid fa-plus"></i> New Chat
                     </button>
                     <button class="reset-btn" id="resetChatBtn" onclick="resetCurrentChat()" title="Reset Current Chat">
@@ -238,7 +249,7 @@
                         <p class="welcome-hero-sub">
                             Intelligent companion for conversation, study, code &amp; Nepal exploration
                         </p>
-                        
+
                         <!-- Segmented Mode Pills -->
                         <div class="mode-pills-bar" id="welcomeModePills">
                             <button class="mode-pill-btn active" data-mode="general" onclick="switchAIMode('general')">
@@ -266,12 +277,14 @@
 
                         <!-- Sleek Minimalist Starter Prompts (Card-less Capsules) -->
                         <div class="starter-prompts-grid" id="suggestionChips">
-                            <button class="starter-chip" onclick="sendPrompt('Explain the top trekking routes, permits, and itinerary tips for exploring Nepal in detail.')">
+                            <button class="starter-chip"
+                                onclick="sendPrompt('Explain the top trekking routes, permits, and itinerary tips for exploring Nepal in detail.')">
                                 <i class="fa-solid fa-mountain-sun chip-icon"></i>
                                 <span class="chip-title">Annapurna trekking routes &amp; permits</span>
                             </button>
 
-                            <button class="starter-chip" onclick="sendPrompt('Write a clean, production-ready Python FastAPI architecture with authentication, rate limiting, and modular structure.')">
+                            <button class="starter-chip"
+                                onclick="sendPrompt('Write a clean, production-ready Python FastAPI architecture with authentication, rate limiting, and modular structure.')">
                                 <i class="fa-solid fa-code chip-icon"></i>
                                 <span class="chip-title">FastAPI architecture with rate limiting</span>
                             </button>
@@ -301,7 +314,8 @@
                     <div class="attachment-progress-wrapper" id="attachmentProgressWrapper" style="display: none;">
                         <div class="attachment-progress-header">
                             <i class="fa-solid fa-cloud-arrow-up"></i>
-                            <span class="attachment-progress-status" id="attachmentProgressStatus">Extracting document text...</span>
+                            <span class="attachment-progress-status" id="attachmentProgressStatus">Extracting document
+                                text...</span>
                         </div>
                         <div class="attachment-progress-track">
                             <div class="attachment-progress-fill" id="attachmentProgressFill"></div>
@@ -329,31 +343,48 @@
                 <!-- Study Mode Action Bar (Visible when Study Mode is selected) -->
                 <div class="study-actions-bar" id="studyActionsBar" style="display: none;">
                     <span class="study-actions-label">📚 Study Actions:</span>
-                    <button class="study-action-btn" onclick="executeStudyAction('explain')" title="Explain concept with 6-part framework">📖 Explain Topic</button>
-                    <button class="study-action-btn" onclick="executeStudyAction('notes')" title="Create revision notes">📝 Make Notes</button>
-                    <button class="study-action-btn" onclick="executeStudyAction('summary')" title="Summarize topic">📄 Summarize</button>
-                    <button class="study-action-btn" onclick="executeStudyAction('questions')" title="Generate study questions">❓ Generate Questions</button>
-                    <button class="study-action-btn" onclick="executeStudyAction('mcqs')" title="Generate multiple choice questions">☑️ Generate MCQs</button>
-                    <button class="study-action-btn" onclick="executeStudyAction('flashcards')" title="Create concept flashcards">🧠 Flashcards</button>
-                    <button class="study-action-btn" onclick="executeStudyAction('exam')" title="Exam preparation guide & answers">🎯 Exam Prep</button>
-                    <button class="study-action-btn is-quiz" onclick="executeStudyAction('quiz')" title="Interactive turn-by-turn quiz">🔄 Quiz Me</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('explain')"
+                        title="Explain concept with 6-part framework">📖 Explain Topic</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('notes')"
+                        title="Create revision notes">📝 Make Notes</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('summary')" title="Summarize topic">📄
+                        Summarize</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('questions')"
+                        title="Generate study questions">❓ Generate Questions</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('mcqs')"
+                        title="Generate multiple choice questions">☑️ Generate MCQs</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('flashcards')"
+                        title="Create concept flashcards">🧠 Flashcards</button>
+                    <button class="study-action-btn" onclick="executeStudyAction('exam')"
+                        title="Exam preparation guide & answers">🎯 Exam Prep</button>
+                    <button class="study-action-btn is-quiz" onclick="executeStudyAction('quiz')"
+                        title="Interactive turn-by-turn quiz">🔄 Quiz Me</button>
                 </div>
 
                 <!-- Document Interactive Prompt Chips (Visible when doc is attached) -->
                 <div class="doc-quick-chips" id="docQuickChips" style="display: none;">
                     <span class="quick-chip-label">✨ Quick Ask:</span>
-                    <button class="doc-chip" onclick="setDocPrompt('Summarize this document in key takeaways')">📋 Summarize</button>
-                    <button class="doc-chip" onclick="setDocPrompt('Find the most important points and highlights')">🔍 Important Points</button>
-                    <button class="doc-chip" onclick="setDocPrompt('Generate 5 exam questions from this document with answers')">❓ Generate Questions</button>
-                    <button class="doc-chip" onclick="setDocPrompt('Explain this topic in simple language for beginners')">💡 Explain Simply</button>
-                    <button class="doc-chip" onclick="setDocPrompt('Explain Unit 2 in detail')">📖 Explain Unit 2</button>
+                    <button class="doc-chip" onclick="setDocPrompt('Summarize this document in key takeaways')">📋
+                        Summarize</button>
+                    <button class="doc-chip" onclick="setDocPrompt('Find the most important points and highlights')">🔍
+                        Important Points</button>
+                    <button class="doc-chip"
+                        onclick="setDocPrompt('Generate 5 exam questions from this document with answers')">❓ Generate
+                        Questions</button>
+                    <button class="doc-chip"
+                        onclick="setDocPrompt('Explain this topic in simple language for beginners')">💡 Explain
+                        Simply</button>
+                    <button class="doc-chip" onclick="setDocPrompt('Explain Unit 2 in detail')">📖 Explain Unit
+                        2</button>
                 </div>
 
                 <div class="input-container">
                     <!-- Hidden File Inputs -->
-                    <input type="file" id="fileUploadInput" style="display: none;" accept=".pdf,.docx,.txt,.csv,.json,.md">
-                    <input type="file" id="imageUploadInput" style="display: none;" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
-                    
+                    <input type="file" id="fileUploadInput" style="display: none;"
+                        accept=".pdf,.docx,.txt,.csv,.json,.md">
+                    <input type="file" id="imageUploadInput" style="display: none;"
+                        accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+
                     <button class="tool-btn" id="attachFileBtn" title="Chat with Document (PDF, DOCX, TXT, CSV)">
                         <i class="fa-solid fa-file-arrow-up"></i>
                     </button>
@@ -361,7 +392,7 @@
                     <button class="tool-btn" id="attachImageBtn" title="Attach Image for AI Vision Analysis">
                         <i class="fa-regular fa-image"></i>
                     </button>
-                    
+
                     <button class="tool-btn" id="chartPromptBtn" title="Insert Chart Request">
                         <i class="fa-solid fa-chart-column"></i>
                     </button>
@@ -369,7 +400,8 @@
                     <!-- Language Preference Selector -->
                     <div class="lang-selector-wrapper" title="Select Preferred Response Language">
                         <i class="fa-solid fa-language lang-selector-icon"></i>
-                        <select id="responseLangSelect" class="response-lang-select" aria-label="Preferred Response Language">
+                        <select id="responseLangSelect" class="response-lang-select"
+                            aria-label="Preferred Response Language">
                             <option value="auto">🌐 Auto</option>
                             <option value="nepali" selected>🇳🇵 नेपाली (Nepali)</option>
                             <option value="english">🇬🇧 English</option>
@@ -380,20 +412,15 @@
                             <option value="bhojpuri">🇳🇵 भोजपुरी (Bhojpuri)</option>
                         </select>
                     </div>
-                    
-                    <textarea 
-                        id="userInput" 
-                        class="chat-textarea" 
-                        rows="1" 
-                        spellcheck="false"
-                        autocomplete="off"
+
+                    <textarea id="userInput" class="chat-textarea" rows="1" spellcheck="false" autocomplete="off"
                         autocorrect="off"
                         onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); handleSend(); }"
-                        oninput="autoResizeTextarea()"
-                        placeholder="Ask anything..."></textarea>
-                    
+                        oninput="autoResizeTextarea()" placeholder="Ask anything..."></textarea>
+
                     <div class="input-actions">
-                        <button class="stop-btn" id="stopBtn" style="display: none;" onclick="handleStop()" title="Stop Generating">
+                        <button class="stop-btn" id="stopBtn" style="display: none;" onclick="handleStop()"
+                            title="Stop Generating">
                             <i class="fa-solid fa-stop"></i> Stop
                         </button>
                         <button class="send-btn" id="sendBtn" onclick="handleSend()" title="Send Message">
@@ -417,8 +444,9 @@
             </div>
             <div class="modal-body">
                 <label for="personaPrompt">Custom System Instructions:</label>
-                <textarea id="personaPrompt" rows="5" spellcheck="false" placeholder="Define how Nepal-GPT should behave..."></textarea>
-                
+                <textarea id="personaPrompt" rows="5" spellcheck="false"
+                    placeholder="Define how Nepal-GPT should behave..."></textarea>
+
                 <div class="quick-personas">
                     <span class="quick-label">Presets:</span>
                     <button class="preset-chip" onclick="setPreset('general')">General</button>
@@ -448,9 +476,10 @@
                         <p class="auth-modal-sub" id="authModalSub">Enter your Email and Password to continue</p>
                     </div>
                 </div>
-                <button class="close-modal-btn" id="closeAuthModalBtn" onclick="closeAuthModal()"><i class="fa-solid fa-xmark"></i></button>
+                <button class="close-modal-btn" id="closeAuthModalBtn" onclick="closeAuthModal()"><i
+                        class="fa-solid fa-xmark"></i></button>
             </div>
-            
+
             <div class="modal-body auth-modal-body">
                 <!-- Auth Tabs: Sign In / Create Account -->
                 <div class="auth-tabs">
@@ -467,42 +496,28 @@
                     <div class="auth-form-group" id="authNameGroup" style="display: none;">
                         <label for="authNameInput"><i class="fa-solid fa-user"></i> Full Name (Optional)</label>
                         <div class="auth-input-wrapper">
-                            <input 
-                                type="text" 
-                                id="authNameInput" 
-                                placeholder="e.g. Rahul Sharma" 
-                                autocomplete="name"
+                            <input type="text" id="authNameInput" placeholder="e.g. Rahul Sharma" autocomplete="name"
                                 spellcheck="false"
-                                onkeydown="if (event.key === 'Enter') document.getElementById('authEmailInput').focus()"
-                            />
+                                onkeydown="if (event.key === 'Enter') document.getElementById('authEmailInput').focus()" />
                         </div>
                     </div>
 
                     <div class="auth-form-group">
                         <label for="authEmailInput"><i class="fa-solid fa-envelope"></i> Email Address</label>
                         <div class="auth-input-wrapper">
-                            <input 
-                                type="email" 
-                                id="authEmailInput" 
-                                placeholder="name@example.com" 
-                                autocomplete="email"
-                                spellcheck="false"
-                                onkeydown="if (event.key === 'Enter') handleEmailEnter(event)"
-                            />
+                            <input type="email" id="authEmailInput" placeholder="name@example.com" autocomplete="email"
+                                spellcheck="false" onkeydown="if (event.key === 'Enter') handleEmailEnter(event)" />
                         </div>
                     </div>
 
                     <div class="auth-form-group">
                         <label for="authPasswordInput"><i class="fa-solid fa-lock"></i> Password</label>
                         <div class="auth-input-wrapper has-toggle">
-                            <input 
-                                type="password" 
-                                id="authPasswordInput" 
-                                placeholder="Enter your password (min 6 chars)" 
-                                autocomplete="current-password"
-                                onkeydown="if (event.key === 'Enter') handleAuthSubmit()"
-                            />
-                            <button type="button" class="password-toggle-btn" id="passwordToggleBtn" onclick="togglePasswordVisibility()" title="Show/Hide Password">
+                            <input type="password" id="authPasswordInput"
+                                placeholder="Enter your password (min 6 chars)" autocomplete="current-password"
+                                onkeydown="if (event.key === 'Enter') handleAuthSubmit()" />
+                            <button type="button" class="password-toggle-btn" id="passwordToggleBtn"
+                                onclick="togglePasswordVisibility()" title="Show/Hide Password">
                                 <i class="fa-regular fa-eye" id="passwordToggleIcon"></i>
                             </button>
                         </div>
@@ -511,19 +526,24 @@
 
                     <div class="auth-actions-group">
                         <button class="btn primary auth-submit-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">
-                            <i class="fa-solid fa-arrow-right-to-bracket" id="authSubmitIcon"></i> <span id="authSubmitText">Sign In</span>
+                            <i class="fa-solid fa-arrow-right-to-bracket" id="authSubmitIcon"></i> <span
+                                id="authSubmitText">Sign In</span>
                         </button>
                     </div>
 
                     <div class="auth-switch-mode">
                         <span id="authSwitchText">Don't have an account?</span>
-                        <button type="button" class="auth-switch-btn" id="authSwitchBtn" onclick="toggleAuthMode()">Create Account</button>
+                        <button type="button" class="auth-switch-btn" id="authSwitchBtn"
+                            onclick="toggleAuthMode()">Create Account</button>
                     </div>
 
                     <div class="auth-perks-box">
-                        <div class="perk-item"><i class="fa-solid fa-infinity"></i> <span>Unlimited Queries & Reasoning</span></div>
-                        <div class="perk-item"><i class="fa-solid fa-brain"></i> <span>All 7 Special AI Modes</span></div>
-                        <div class="perk-item"><i class="fa-solid fa-cloud"></i> <span>Saved History & Multimodal Uploads</span></div>
+                        <div class="perk-item"><i class="fa-solid fa-infinity"></i> <span>Unlimited Queries &
+                                Reasoning</span></div>
+                        <div class="perk-item"><i class="fa-solid fa-brain"></i> <span>All 7 Special AI Modes</span>
+                        </div>
+                        <div class="perk-item"><i class="fa-solid fa-cloud"></i> <span>Saved History & Multimodal
+                                Uploads</span></div>
                     </div>
                 </div>
             </div>
@@ -538,9 +558,10 @@
                     <i class="fa-solid fa-lock"></i>
                 </div>
                 <h3>Guest Limit Reached</h3>
-                <p>You have used your <b>5 free guest queries</b>. Please sign in with your Email ID to unlock unlimited access!</p>
+                <p>You have used your <b>5 free guest queries</b>. Please sign in with your Email ID to unlock unlimited
+                    access!</p>
             </div>
-            
+
             <div class="limit-features-list">
                 <div class="limit-feature-item">
                     <i class="fa-solid fa-circle-check"></i>
@@ -567,4 +588,5 @@
 
     <script src="/static/script.js?v=13.0"></script>
 </body>
+
 </html>
