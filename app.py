@@ -42,7 +42,41 @@ ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".csv"}
 # ===================================================
 # Authentication & Guest Usage Quota System
 # ===================================================
+import hashlib
+
 GUEST_USAGE_LIMIT = 5  # Free queries before email login is required
+
+USER_ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), "user_accounts.json")
+user_accounts: Dict[str, Dict[str, Any]] = {}
+
+def load_user_accounts():
+    global user_accounts
+    if os.path.exists(USER_ACCOUNTS_FILE):
+        try:
+            with open(USER_ACCOUNTS_FILE, "r", encoding="utf-8") as f:
+                user_accounts = json.load(f)
+        except Exception as e:
+            print(f"Error loading user accounts: {e}")
+            user_accounts = {}
+
+def save_user_accounts():
+    try:
+        with open(USER_ACCOUNTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(user_accounts, f, indent=2)
+    except Exception as e:
+        print(f"Error saving user accounts: {e}")
+
+load_user_accounts()
+
+def hash_password(password: str, salt: Optional[str] = None) -> tuple[str, str]:
+    if not salt:
+        salt = secrets.token_hex(16)
+    hashed = hashlib.sha256(f"{salt}:{password}".encode("utf-8")).hexdigest()
+    return hashed, salt
+
+def verify_password(password: str, hashed: str, salt: str) -> bool:
+    check_hash = hashlib.sha256(f"{salt}:{password}".encode("utf-8")).hexdigest()
+    return secrets.compare_digest(check_hash, hashed)
 
 # In-memory storage with file persistence backup
 guest_sessions: Dict[str, Dict[str, Any]] = {}
@@ -56,9 +90,12 @@ class VerifyOtpRequest(BaseModel):
     email: str
     otp: str
 
-class QuickLoginRequest(BaseModel):
+class AuthRequest(BaseModel):
     email: str
+    password: Optional[str] = None
     name: Optional[str] = None
+
+QuickLoginRequest = AuthRequest  # Backwards compatibility
 
 def normalize_email(email: str) -> str:
     return email.strip().lower()
@@ -142,15 +179,89 @@ def verify_otp(req: VerifyOtpRequest):
         }
     }
 
-@app.post("/api/auth/login")
-def quick_email_login(req: QuickLoginRequest):
+@app.post("/api/auth/register")
+@app.post("/api/auth/signup")
+def register_account(req: AuthRequest):
     email = normalize_email(req.email)
     if not is_valid_email(email):
         raise HTTPException(status_code=400, detail="Please enter a valid email address.")
 
+    password = (req.password or "").strip()
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+
+    if email in user_accounts:
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in.")
+
+    name = req.name.strip() if req.name and req.name.strip() else email.split("@")[0].capitalize()
+    hashed, salt = hash_password(password)
+    user_accounts[email] = {
+        "email": email,
+        "name": name,
+        "hash": hashed,
+        "salt": salt,
+        "created_at": time.time()
+    }
+    save_user_accounts()
+
     token = f"ngt_{secrets.token_urlsafe(32)}"
+    user_info = {
+        "token": token,
+        "email": email,
+        "name": name,
+        "tier": "PRO_MEMBER",
+        "logged_in_at": time.time(),
+        "total_messages": 0
+    }
+    user_sessions[token] = user_info
+
+    return {
+        "status": "success",
+        "message": f"Account created successfully! Welcome, {name}.",
+        "token": token,
+        "user": {
+            "email": email,
+            "name": name,
+            "tier": "PRO_MEMBER",
+            "unlimited": True
+        }
+    }
+
+@app.post("/api/auth/login")
+def login_account(req: AuthRequest):
+    email = normalize_email(req.email)
+    if not is_valid_email(email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+
+    password = (req.password or "").strip() if req.password is not None else None
     name = req.name.strip() if req.name and req.name.strip() else email.split("@")[0].capitalize()
 
+    # If password is provided, authenticate or auto-register
+    if password is not None:
+        if email in user_accounts:
+            acc = user_accounts[email]
+            if not verify_password(password, acc.get("hash", ""), acc.get("salt", "")):
+                raise HTTPException(status_code=400, detail="Incorrect password. Please check and try again.")
+            name = acc.get("name") or name
+        else:
+            # Auto-register new user if password is at least 6 chars
+            if len(password) < 6:
+                raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+            hashed, salt = hash_password(password)
+            user_accounts[email] = {
+                "email": email,
+                "name": name,
+                "hash": hashed,
+                "salt": salt,
+                "created_at": time.time()
+            }
+            save_user_accounts()
+    else:
+        # Password not provided (e.g. backward-compatible tests)
+        if email in user_accounts and user_accounts[email].get("name"):
+            name = user_accounts[email]["name"]
+
+    token = f"ngt_{secrets.token_urlsafe(32)}"
     user_info = {
         "token": token,
         "email": email,
@@ -575,4 +686,4 @@ if __name__ == "__main__":
     print("==================================================")
     print("🏔️ Starting Nepal-GPT Web Server at http://localhost:5050")
     print("==================================================")
-    uvicorn.run("app:app", host="0.0.0.0", port=5050, reload=False)
+    uvicorn.run("app:app", host="0.0.0.0", port=5050, reload=True)

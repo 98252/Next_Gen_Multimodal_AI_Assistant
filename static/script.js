@@ -190,16 +190,21 @@ const dragDropOverlay = document.getElementById("dragDropOverlay");
 window.handleSend = handleSend;
 window.handleStop = handleStop;
 window.autoResizeTextarea = autoResizeTextarea;
-window.switchAIMode = switchAIMode;
 window.createNewSession = createNewSession;
 window.openAuthModal = openAuthModal;
 window.closeAuthModal = closeAuthModal;
 window.openLimitModal = openLimitModal;
 window.closeLimitModal = closeLimitModal;
 window.goToAuthStep = goToAuthStep;
-window.handleRequestOtp = handleRequestOtp;
-window.handleVerifyOtp = handleVerifyOtp;
-window.handleQuickLogin = handleQuickLogin;
+window.setAuthMode = setAuthMode;
+window.toggleAuthMode = toggleAuthMode;
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.handleEmailEnter = handleEmailEnter;
+window.handleAuthSubmit = handleAuthSubmit;
+window.handleEmailLogin = handleAuthSubmit;
+window.handleRequestOtp = handleAuthSubmit;
+window.handleVerifyOtp = handleAuthSubmit;
+window.handleQuickLogin = handleAuthSubmit;
 window.handleLogout = handleLogout;
 window.toggleUserDropdown = toggleUserDropdown;
 window.autoFillOtp = autoFillOtp;
@@ -345,19 +350,101 @@ function updateAuthUI() {
     }
 }
 
-function openAuthModal(email = "") {
+let currentAuthMode = "signin"; // "signin" or "signup"
+
+function setAuthMode(mode) {
+    currentAuthMode = mode === "signup" ? "signup" : "signin";
+    const tabSignIn = document.getElementById("authTabSignIn");
+    const tabSignUp = document.getElementById("authTabSignUp");
+    const nameGroup = document.getElementById("authNameGroup");
+    const modalHeader = document.getElementById("authModalHeader");
+    const modalSub = document.getElementById("authModalSub");
+    const submitText = document.getElementById("authSubmitText");
+    const submitIcon = document.getElementById("authSubmitIcon");
+    const switchText = document.getElementById("authSwitchText");
+    const switchBtn = document.getElementById("authSwitchBtn");
+    const brandIcon = document.getElementById("authBrandIcon");
+    const passwordHint = document.getElementById("authPasswordHint");
+    const passwordInput = document.getElementById("authPasswordInput");
+
+    if (currentAuthMode === "signup") {
+        if (tabSignIn) tabSignIn.classList.remove("active");
+        if (tabSignUp) tabSignUp.classList.add("active");
+        if (nameGroup) nameGroup.style.display = "block";
+        if (modalHeader) modalHeader.textContent = "Create an Account";
+        if (modalSub) modalSub.textContent = "Register with Email & Password for unlimited access";
+        if (brandIcon) brandIcon.className = "fa-solid fa-user-plus";
+        if (submitText) submitText.textContent = "Create Account";
+        if (submitIcon) submitIcon.className = "fa-solid fa-user-plus";
+        if (switchText) switchText.textContent = "Already have an account?";
+        if (switchBtn) switchBtn.textContent = "Sign In";
+        if (passwordHint) passwordHint.textContent = "Choose a strong password (at least 6 characters)";
+        if (passwordInput) passwordInput.setAttribute("autocomplete", "new-password");
+    } else {
+        if (tabSignUp) tabSignUp.classList.remove("active");
+        if (tabSignIn) tabSignIn.classList.add("active");
+        if (nameGroup) nameGroup.style.display = "none";
+        if (modalHeader) modalHeader.textContent = "Sign In to Nepal-GPT";
+        if (modalSub) modalSub.textContent = "Enter your Email and Password to continue";
+        if (brandIcon) brandIcon.className = "fa-solid fa-lock";
+        if (submitText) submitText.textContent = "Sign In";
+        if (submitIcon) submitIcon.className = "fa-solid fa-arrow-right-to-bracket";
+        if (switchText) switchText.textContent = "Don't have an account?";
+        if (switchBtn) switchBtn.textContent = "Create Account";
+        if (passwordHint) passwordHint.textContent = "Secure password (min. 6 characters)";
+        if (passwordInput) passwordInput.setAttribute("autocomplete", "current-password");
+    }
+}
+
+function toggleAuthMode() {
+    setAuthMode(currentAuthMode === "signin" ? "signup" : "signin");
+}
+
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById("authPasswordInput");
+    const icon = document.getElementById("passwordToggleIcon");
+    if (!passwordInput) return;
+    if (passwordInput.type === "password") {
+        passwordInput.type = "text";
+        if (icon) icon.className = "fa-regular fa-eye-slash";
+    } else {
+        passwordInput.type = "password";
+        if (icon) icon.className = "fa-regular fa-eye";
+    }
+}
+
+function handleEmailEnter(event) {
+    const passwordInput = document.getElementById("authPasswordInput");
+    if (passwordInput && !passwordInput.value) {
+        passwordInput.focus();
+    } else {
+        handleAuthSubmit();
+    }
+}
+
+function openAuthModal(email = "", mode = "signin") {
+    if (typeof email !== "string") email = "";
+    if (typeof mode !== "string") mode = "signin";
     const authModal = document.getElementById("authModal");
     const authEmailInput = document.getElementById("authEmailInput");
+    const authPasswordInput = document.getElementById("authPasswordInput");
     if (!authModal) return;
 
-    goToAuthStep("email");
+    setAuthMode(mode);
     if (email && authEmailInput) {
         authEmailInput.value = email;
     }
-    authModal.style.display = "flex";
-    if (authEmailInput) {
-        setTimeout(() => authEmailInput.focus(), 50);
+    if (authPasswordInput) {
+        authPasswordInput.value = "";
     }
+    authModal.style.display = "flex";
+    setTimeout(() => {
+        if (authEmailInput && !authEmailInput.value) {
+            authEmailInput.focus();
+        } else if (authPasswordInput) {
+            authPasswordInput.focus();
+        }
+    }, 50);
 }
 
 function closeAuthModal() {
@@ -376,34 +463,18 @@ function closeLimitModal() {
 }
 
 function goToAuthStep(step) {
-    const stepEmail = document.getElementById("authStepEmail");
-    const stepOtp = document.getElementById("authStepOtp");
-    const modalHeader = document.getElementById("authModalHeader");
-    const modalSub = document.getElementById("authModalSub");
-
-    if (step === "email") {
-        if (stepEmail) stepEmail.style.display = "block";
-        if (stepOtp) stepOtp.style.display = "none";
-        if (modalHeader) modalHeader.textContent = "Sign In to Nepal-GPT";
-        if (modalSub) modalSub.textContent = "Log in with your Email ID for unlimited AI chats & history";
-        const emailInput = document.getElementById("authEmailInput");
-        if (emailInput) setTimeout(() => emailInput.focus(), 50);
-    } else if (step === "otp") {
-        if (stepEmail) stepEmail.style.display = "none";
-        if (stepOtp) stepOtp.style.display = "block";
-        if (modalHeader) modalHeader.textContent = "Enter Verification Code";
-        if (modalSub) modalSub.textContent = `Check your inbox at ${requestedOtpEmail}`;
-        const otpInput = document.getElementById("otpCodeInput");
-        if (otpInput) {
-            otpInput.value = "";
-            setTimeout(() => otpInput.focus(), 50);
-        }
-    }
+    const emailInput = document.getElementById("authEmailInput");
+    if (emailInput) setTimeout(() => emailInput.focus(), 50);
 }
 
-async function handleRequestOtp() {
+async function handleAuthSubmit() {
     const emailInput = document.getElementById("authEmailInput");
+    const passwordInput = document.getElementById("authPasswordInput");
+    const nameInput = document.getElementById("authNameInput");
+
     const email = (emailInput ? emailInput.value : "").trim().toLowerCase();
+    const password = (passwordInput ? passwordInput.value : "").trim();
+    const name = nameInput ? nameInput.value.trim() : "";
 
     if (!email || !email.includes("@") || !email.includes(".")) {
         showToast("Please enter a valid email address.", "fa-triangle-exclamation");
@@ -411,86 +482,41 @@ async function handleRequestOtp() {
         return;
     }
 
-    const sendOtpBtn = document.getElementById("sendOtpBtn");
-    if (sendOtpBtn) {
-        sendOtpBtn.disabled = true;
-        sendOtpBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending code...`;
-    }
-
-    try {
-        const res = await fetch("/api/auth/send-otp", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email })
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-            throw new Error(data.detail || "Failed to send verification code.");
-        }
-
-        requestedOtpEmail = email;
-        const targetEl = document.getElementById("otpEmailTarget");
-        if (targetEl) targetEl.textContent = email;
-
-        // In dev / demo mode, show the generated code for instant testing
-        if (data.demo_otp) {
-            demoOtpCode = data.demo_otp;
-            const banner = document.getElementById("demoOtpBanner");
-            const valEl = document.getElementById("demoOtpValue");
-            if (banner && valEl) {
-                valEl.textContent = demoOtpCode;
-                banner.style.display = "flex";
-            }
-        }
-
-        goToAuthStep("otp");
-        showToast(`Verification code sent to ${email}`, "fa-paper-plane");
-
-    } catch (err) {
-        showToast(err.message || "Failed to send OTP", "fa-triangle-exclamation");
-    } finally {
-        if (sendOtpBtn) {
-            sendOtpBtn.disabled = false;
-            sendOtpBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Send Verification Code`;
-        }
-    }
-}
-
-function autoFillOtp() {
-    const otpInput = document.getElementById("otpCodeInput");
-    if (otpInput && demoOtpCode) {
-        otpInput.value = demoOtpCode;
-        handleVerifyOtp();
-    }
-}
-
-async function handleVerifyOtp() {
-    const otpInput = document.getElementById("otpCodeInput");
-    const otp = (otpInput ? otpInput.value : "").trim();
-
-    if (!otp || otp.length < 4) {
-        showToast("Please enter the verification code.", "fa-triangle-exclamation");
-        if (otpInput) otpInput.focus();
+    if (!password) {
+        showToast("Please enter your password.", "fa-triangle-exclamation");
+        if (passwordInput) passwordInput.focus();
         return;
     }
 
-    const verifyBtn = document.getElementById("verifyOtpBtn");
-    if (verifyBtn) {
-        verifyBtn.disabled = true;
-        verifyBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying...`;
+    if (password.length < 6) {
+        showToast("Password must be at least 6 characters long.", "fa-triangle-exclamation");
+        if (passwordInput) passwordInput.focus();
+        return;
+    }
+
+    const submitBtn = document.getElementById("authSubmitBtn") || document.getElementById("emailLoginBtn");
+    const originalText = submitBtn ? submitBtn.innerHTML : "";
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${currentAuthMode === "signup" ? "Creating Account..." : "Signing in..."}`;
+    }
+
+    const endpoint = currentAuthMode === "signup" ? "/api/auth/register" : "/api/auth/login";
+    const payload = { email, password };
+    if (name && currentAuthMode === "signup") {
+        payload.name = name;
     }
 
     try {
-        const res = await fetch("/api/auth/verify-otp", {
+        const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: requestedOtpEmail, otp })
+            body: JSON.stringify(payload)
         });
 
         const data = await res.json();
         if (!res.ok) {
-            throw new Error(data.detail || "Verification failed. Invalid code.");
+            throw new Error(data.detail || (currentAuthMode === "signup" ? "Account creation failed." : "Sign in failed."));
         }
 
         authToken = data.token;
@@ -501,64 +527,45 @@ async function handleVerifyOtp() {
         closeAuthModal();
         closeLimitModal();
         updateAuthUI();
-        showToast(`Welcome back, ${currentUser.name || currentUser.email}! Unlimited chats enabled 🎉`, "fa-circle-check");
+        const welcomeName = currentUser.name || currentUser.email;
+        showToast(
+            currentAuthMode === "signup"
+                ? `Account created! Welcome, ${welcomeName} 🎉`
+                : `Welcome back, ${welcomeName}! Unlimited chats unlocked 🚀`,
+            "fa-circle-check"
+        );
+
+        if (passwordInput) passwordInput.value = "";
 
     } catch (err) {
-        showToast(err.message || "Verification error", "fa-triangle-exclamation");
+        showToast(err.message || "Authentication failed", "fa-triangle-exclamation");
     } finally {
-        if (verifyBtn) {
-            verifyBtn.disabled = false;
-            verifyBtn.innerHTML = `<i class="fa-solid fa-arrow-right-to-bracket"></i> Verify & Sign In`;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = currentAuthMode === "signup"
+                ? `<i class="fa-solid fa-user-plus" id="authSubmitIcon"></i> <span id="authSubmitText">Create Account</span>`
+                : `<i class="fa-solid fa-arrow-right-to-bracket" id="authSubmitIcon"></i> <span id="authSubmitText">Sign In</span>`;
         }
     }
+}
+
+// Aliases for compatibility
+async function handleEmailLogin() {
+    return handleAuthSubmit();
 }
 
 async function handleQuickLogin() {
-    const emailInput = document.getElementById("authEmailInput");
-    const email = (emailInput ? emailInput.value : "").trim().toLowerCase();
+    return handleAuthSubmit();
+}
 
-    if (!email || !email.includes("@") || !email.includes(".")) {
-        showToast("Please enter your email address to log in.", "fa-triangle-exclamation");
-        if (emailInput) emailInput.focus();
-        return;
-    }
+async function handleRequestOtp() {
+    return handleAuthSubmit();
+}
 
-    const quickBtn = document.getElementById("quickLoginBtn");
-    if (quickBtn) {
-        quickBtn.disabled = true;
-        quickBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Signing in...`;
-    }
+function autoFillOtp() { }
 
-    try {
-        const res = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email })
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-            throw new Error(data.detail || "Login failed.");
-        }
-
-        authToken = data.token;
-        currentUser = data.user;
-        localStorage.setItem(AUTH_TOKEN_KEY, authToken);
-        localStorage.setItem(USER_INFO_KEY, JSON.stringify(currentUser));
-
-        closeAuthModal();
-        closeLimitModal();
-        updateAuthUI();
-        showToast(`Signed in as ${currentUser.email}! Unlimited chats unlocked 🚀`, "fa-circle-check");
-
-    } catch (err) {
-        showToast(err.message || "Sign in failed", "fa-triangle-exclamation");
-    } finally {
-        if (quickBtn) {
-            quickBtn.disabled = false;
-            quickBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Instant 1-Click Login`;
-        }
-    }
+async function handleVerifyOtp() {
+    return handleAuthSubmit();
 }
 
 async function handleLogout() {
@@ -569,7 +576,7 @@ async function handleLogout() {
                 headers: { "Authorization": `Bearer ${authToken}` }
             });
         }
-    } catch (e) {}
+    } catch (e) { }
 
     authToken = null;
     currentUser = null;
@@ -620,7 +627,7 @@ function showToast(message, icon = "fa-circle-check") {
 }
 
 // AI Mode Switching
-window.switchAIMode = function(modeKey) {
+function switchAIMode(modeKey) {
     if (!AI_MODES[modeKey]) {
         if (modeKey === "nepali") modeKey = "nepal";
         else return;
@@ -629,12 +636,13 @@ window.switchAIMode = function(modeKey) {
     localStorage.setItem(MODE_STORAGE_KEY, modeKey);
     if (aiModeSelect) aiModeSelect.value = modeKey;
     updateModeUI(modeKey, true);
-};
+}
+window.switchAIMode = switchAIMode;
 
 function updateModeUI(modeKey, notify = true) {
     const mode = AI_MODES[modeKey] || AI_MODES.general;
     if (pillModeText) pillModeText.textContent = mode.name;
-    
+
     const modePill = document.getElementById("activeModePill");
     if (modePill) {
         modePill.innerHTML = `<i class="fa-solid ${mode.icon}"></i> <span>${mode.name}</span>`;
@@ -676,7 +684,7 @@ function updateModeUI(modeKey, notify = true) {
 }
 
 // Study Assistant Action Runner
-window.executeStudyAction = function(actionType) {
+window.executeStudyAction = function (actionType) {
     switchAIMode("study", false);
     let currentVal = userInput ? userInput.value.trim() : "";
 
@@ -848,7 +856,7 @@ function updateSuggestionsForMode(modeKey) {
 }
 
 // Sample Document Loader
-window.attachSampleDoc = function() {
+window.attachSampleDoc = function () {
     attachedFileName = "nepal_hydropower_report.txt";
     attachedFileContent = `Project Report: Nepal Hydropower Development 2026\n\nExecutive Summary:\nNepal's total installed hydropower capacity reached 3,200 MW in 2025. Key projects include Upper Tamakoshi (456 MW) and Arun III (900 MW currently nearing completion). Domestic electricity demand peaked at 2,150 MW during winter, with surplus energy exported to India under cross-border power trade agreements.\n\nFinancial Overview:\nTotal capital expenditure for 2025-2026 is projected at NPR 85 Billion (रु ८५ अर्ब). Revenue from cross-border power sales exceeded NPR 16.5 Billion. Challenges include seasonal river flow variations and transmission line infrastructure.`;
     attachedFileSize = "1.2 KB";
@@ -867,7 +875,7 @@ window.attachSampleDoc = function() {
 };
 
 // Document Quick Prompt Runner
-window.setDocPrompt = function(promptText) {
+window.setDocPrompt = function (promptText) {
     if (userInput) {
         userInput.value = promptText;
         userInput.focus();
@@ -913,7 +921,7 @@ async function handleFileAttachment(file) {
     }
 
     if (isDoc && file.size > MAX_DOC_SIZE) {
-        showToast(`Document (${(file.size/(1024*1024)).toFixed(1)} MB) exceeds 10MB limit.`, "fa-triangle-exclamation");
+        showToast(`Document (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds 10MB limit.`, "fa-triangle-exclamation");
         return;
     }
 
@@ -925,7 +933,7 @@ async function handleFileAttachment(file) {
         attachedFileType = ext.toUpperCase();
 
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             attachedImageData = e.target.result;
             attachedFileContent = null;
             renderAttachmentPreview();
@@ -938,7 +946,7 @@ async function handleFileAttachment(file) {
         // Handle Document Extraction via Backend API
         isImageAttachment = false;
         attachedImageData = null;
-        
+
         const previewContainer = document.getElementById("attachmentPreviewContainer");
         const progressWrapper = document.getElementById("attachmentProgressWrapper");
         const cardWrapper = document.getElementById("attachmentCard");
@@ -1048,7 +1056,7 @@ function removeAttachment() {
     if (attachmentPreviewContainer) attachmentPreviewContainer.style.display = "none";
     if (fileUploadInput) fileUploadInput.value = "";
     if (imageUploadInput) imageUploadInput.value = "";
-    
+
     setDocumentInputMode(false);
     showToast("Attachment removed", "fa-xmark");
 }
@@ -1144,11 +1152,11 @@ function generateChatTitle(userText, modeKey, fileName) {
 
     // Clean up text - remove markdown attachments, document banners and code blocks
     let raw = text.replace(/\[Document:[\s\S]*?\]/g, "")
-                  .replace(/\[Attached File:[\s\S]*?\]/g, "")
-                  .replace(/```[\s\S]*?```/g, "")
-                  .replace(/^Question:\s*/i, "")
-                  .replace(/[\r\n]+/g, " ")
-                  .trim();
+        .replace(/\[Attached File:[\s\S]*?\]/g, "")
+        .replace(/```[\s\S]*?```/g, "")
+        .replace(/^Question:\s*/i, "")
+        .replace(/[\r\n]+/g, " ")
+        .trim();
 
     if (!raw && fileName) {
         return `📄 ${fileName}`;
@@ -1238,7 +1246,7 @@ function switchSession(id) {
     currentSessionId = id;
     const session = sessions[id];
     if (chatTitle) chatTitle.textContent = session.title || "Chat";
-    
+
     if (headerPinBtn) {
         headerPinBtn.className = `header-pin-btn ${session.pinned ? "is-pinned" : ""}`;
         headerPinBtn.title = session.pinned ? "Unpin this Chat" : "Pin this Chat";
@@ -1250,7 +1258,7 @@ function switchSession(id) {
 }
 
 // Rename Chat Session Flow
-window.startRenameSession = function(id, event) {
+window.startRenameSession = function (id, event) {
     if (event) event.stopPropagation();
     const session = sessions[id];
     if (!session) return;
@@ -1306,7 +1314,7 @@ window.startRenameSession = function(id, event) {
 };
 
 // Rename Active Chat from Header
-window.renameActiveChat = function() {
+function renameActiveChat() {
     if (!currentSessionId || !sessions[currentSessionId]) return;
     const session = sessions[currentSessionId];
     const newTitle = prompt("Rename this conversation:", session.title);
@@ -1317,10 +1325,11 @@ window.renameActiveChat = function() {
         saveSessions();
         showToast("Conversation renamed!", "fa-pen");
     }
-};
+}
+window.renameActiveChat = renameActiveChat;
 
 // Pin / Unpin Chat Session Flow
-window.togglePinSession = function(id, event) {
+window.togglePinSession = function (id, event) {
     if (event) event.stopPropagation();
     const session = sessions[id];
     if (!session) return;
@@ -1344,7 +1353,7 @@ function renderSessionList(filterQuery = "") {
     const allSessions = Object.values(sessions).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
     const q = (filterQuery || "").toLowerCase().trim();
-    const filtered = q 
+    const filtered = q
         ? allSessions.filter(s => {
             const inTitle = (s.title || "").toLowerCase().includes(q);
             const inMessages = (s.messages || []).some(m => (m.content || "").toLowerCase().includes(q));
@@ -1361,8 +1370,8 @@ function renderSessionList(filterQuery = "") {
     if (filtered.length === 0) {
         const emptyMsg = document.createElement("div");
         emptyMsg.className = "history-empty-msg";
-        emptyMsg.innerHTML = q 
-            ? `<i class="fa-solid fa-magnifying-glass"></i><p>No chats matching "<b>${escapeHtml(filterQuery)}</b>"</p>` 
+        emptyMsg.innerHTML = q
+            ? `<i class="fa-solid fa-magnifying-glass"></i><p>No chats matching "<b>${escapeHtml(filterQuery)}</b>"</p>`
             : `<i class="fa-regular fa-comments"></i><p>No chat history yet</p>`;
         chatsList.appendChild(emptyMsg);
         return;
@@ -1473,7 +1482,7 @@ function renderSessionList(filterQuery = "") {
 }
 
 // Delete session instantly on click
-window.deleteSession = function(id, event) {
+window.deleteSession = function (id, event) {
     if (event) {
         event.stopPropagation();
         event.preventDefault();
@@ -1496,7 +1505,7 @@ window.deleteSession = function(id, event) {
 };
 
 // Clear All History
-window.clearAllHistory = function() {
+window.clearAllHistory = function () {
     sessions = {};
     localStorage.removeItem(STORAGE_KEY);
     currentSessionId = null;
@@ -1505,7 +1514,7 @@ window.clearAllHistory = function() {
 };
 
 // Reset Current Active Chat
-window.resetCurrentChat = function() {
+window.resetCurrentChat = function () {
     if (!currentSessionId || !sessions[currentSessionId]) return;
     if (confirm("Reset current conversation?")) {
         sessions[currentSessionId].messages = [];
@@ -1544,8 +1553,8 @@ function appendMessageElement(role, text, isStream = false, msgIndex = null, fee
 
     const avatar = document.createElement("div");
     avatar.className = `message-avatar ${role}-avatar`;
-    avatar.innerHTML = role === "user" 
-        ? '<i class="fa-solid fa-user"></i>' 
+    avatar.innerHTML = role === "user"
+        ? '<i class="fa-solid fa-user"></i>'
         : '<img src="/static/logo.svg" alt="Nepal Logo" class="bot-avatar-img">';
 
     const bubble = document.createElement("div");
@@ -1651,7 +1660,7 @@ function appendMessageElement(role, text, isStream = false, msgIndex = null, fee
 }
 
 // Like / Dislike Feedback Action
-window.toggleFeedback = function(msgIndex, type) {
+window.toggleFeedback = function (msgIndex, type) {
     const session = sessions[currentSessionId];
     if (!session || !session.messages[msgIndex]) return;
 
@@ -1663,7 +1672,7 @@ window.toggleFeedback = function(msgIndex, type) {
 };
 
 // Copy Full Message Text
-window.copyMessageByIndex = function(msgIndex) {
+window.copyMessageByIndex = function (msgIndex) {
     const session = sessions[currentSessionId];
     if (!session || !session.messages[msgIndex]) return;
     const text = session.messages[msgIndex].content;
@@ -1675,7 +1684,7 @@ window.copyMessageByIndex = function(msgIndex) {
 };
 
 // Copy Code Block Action
-window.copyCode = function(btn) {
+window.copyCode = function (btn) {
     const wrapper = btn.closest(".code-block-wrapper");
     if (!wrapper) return;
     const code = wrapper.querySelector("code");
@@ -1689,7 +1698,7 @@ window.copyCode = function(btn) {
 };
 
 // Edit User Message Flow
-window.startEditUserMessage = function(msgIndex) {
+window.startEditUserMessage = function (msgIndex) {
     if (isGenerating) return;
     const session = sessions[currentSessionId];
     if (!session || !session.messages[msgIndex]) return;
@@ -1715,7 +1724,7 @@ window.startEditUserMessage = function(msgIndex) {
     textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
 };
 
-window.saveAndSubmitEdit = function(msgIndex) {
+window.saveAndSubmitEdit = function (msgIndex) {
     const session = sessions[currentSessionId];
     if (!session || !session.messages[msgIndex]) return;
 
@@ -1734,7 +1743,7 @@ window.saveAndSubmitEdit = function(msgIndex) {
 };
 
 // Regenerate AI Response
-window.regenerateMessage = function(msgIndex) {
+window.regenerateMessage = function (msgIndex) {
     if (isGenerating) return;
     const session = sessions[currentSessionId];
     if (!session) return;
@@ -1748,7 +1757,7 @@ window.regenerateMessage = function(msgIndex) {
 };
 
 // Retry Failed Generation
-window.retryLastMessage = function() {
+window.retryLastMessage = function () {
     if (isGenerating) return;
     renderMessages();
     triggerGeneration();
@@ -1870,7 +1879,7 @@ async function triggerGeneration() {
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
             const detailMsg = typeof errData.detail === "string" ? errData.detail : (errData.detail?.message || `Server error (${response.status})`);
-            
+
             if (response.status === 403 || detailMsg.toLowerCase().includes("guest messages")) {
                 guestUsedCount = guestLimit;
                 localStorage.setItem(GUEST_COUNT_KEY, guestUsedCount.toString());
@@ -1926,7 +1935,7 @@ async function triggerGeneration() {
             botBubble.innerHTML = renderMarkdown(accumulatedText || "No response generated.");
             checkAndRenderCharts(botBubble, accumulatedText);
         }
-        
+
         session.messages.push({
             id: "msg_" + Date.now(),
             role: "bot",
@@ -2003,7 +2012,7 @@ function renderMarkdown(content) {
                 gfm: true
             });
             let html = marked.parse(content);
-            
+
             const tempDiv = document.createElement("div");
             tempDiv.innerHTML = html;
 
@@ -2032,7 +2041,7 @@ function renderMarkdown(content) {
             setTimeout(highlightCodeBlocks, 10);
             return tempDiv.innerHTML;
         }
-    } catch (e) {}
+    } catch (e) { }
     return escapeHtml(content);
 }
 
@@ -2068,7 +2077,7 @@ function escapeHtml(str) {
 }
 
 // Global quick prompt runner
-window.sendPrompt = function(promptText) {
+window.sendPrompt = function (promptText) {
     if (userInput) {
         userInput.value = promptText;
         handleSend();
@@ -2076,7 +2085,7 @@ window.sendPrompt = function(promptText) {
 };
 
 // Create a Chart request
-window.createSampleChart = function() {
+window.createSampleChart = function () {
     switchAIMode("data");
     if (userInput) {
         userInput.value = "Generate an interactive breakdown chart comparing international tourist arrivals in Nepal by top country of origin, with brief analytical takeaways.";
@@ -2085,7 +2094,7 @@ window.createSampleChart = function() {
 };
 
 // Preset personas in modal
-window.setPreset = function(type) {
+window.setPreset = function (type) {
     if (AI_MODES[type]) {
         if (personaPrompt) personaPrompt.value = AI_MODES[type].prompt;
         switchAIMode(type);
@@ -2153,7 +2162,7 @@ function checkAndRenderCharts(container, content) {
                 }
             }
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
 // Event Listeners
@@ -2338,7 +2347,7 @@ function setupEventListeners() {
     }
 
     if (closeModalBtn && personaModal) closeModalBtn.addEventListener("click", () => personaModal.style.display = "none");
-    
+
     if (savePersonaBtn) {
         savePersonaBtn.addEventListener("click", () => {
             if (personaPrompt) {

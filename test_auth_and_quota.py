@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app import app, guest_sessions, user_sessions, otp_store, GUEST_USAGE_LIMIT
+from app import app, guest_sessions, user_sessions, otp_store, user_accounts, GUEST_USAGE_LIMIT
 
 class TestAuthAndQuota(unittest.TestCase):
     def setUp(self):
@@ -19,6 +19,7 @@ class TestAuthAndQuota(unittest.TestCase):
         guest_sessions.clear()
         user_sessions.clear()
         otp_store.clear()
+        user_accounts.clear()
 
     def test_01_guest_initial_profile(self):
         """Test guest user initial profile and default quota."""
@@ -132,6 +133,73 @@ class TestAuthAndQuota(unittest.TestCase):
         # Should NOT be 403
         self.assertNotEqual(res.status_code, 403)
         self.assertEqual(res.status_code, 200)
+
+    def test_08_direct_email_login_without_otp(self):
+        """Test direct email login without requiring any OTP."""
+        # Invalid email rejected
+        bad_res = self.client.post("/api/auth/login", json={"email": "invalid-email"})
+        self.assertEqual(bad_res.status_code, 400)
+        self.assertIn("valid email", bad_res.json()["detail"].lower())
+
+        # Valid email login directly issues token without OTP
+        email = "nepal.student@study.np"
+        res = self.client.post("/api/auth/login", json={"email": email})
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["status"], "success")
+        self.assertIn("token", data)
+        self.assertTrue(data["token"].startswith("ngt_"))
+        self.assertEqual(data["user"]["email"], email)
+        self.assertTrue(data["user"]["unlimited"])
+
+    def test_09_email_and_password_auth_flow(self):
+        """Test full email and password registration and login."""
+        email = "nepal.engineer@kathmandu.np"
+        pwd = "SecurePassword123!"
+
+        # 1. Short password rejected
+        res_short = self.client.post("/api/auth/register", json={"email": email, "password": "123"})
+        self.assertEqual(res_short.status_code, 400)
+        self.assertIn("6 characters", res_short.json()["detail"])
+
+        # 2. Successful Registration
+        reg_res = self.client.post("/api/auth/register", json={
+            "email": email,
+            "password": pwd,
+            "name": "Suman"
+        })
+        self.assertEqual(reg_res.status_code, 200)
+        reg_data = reg_res.json()
+        self.assertEqual(reg_data["status"], "success")
+        self.assertEqual(reg_data["user"]["name"], "Suman")
+        self.assertTrue(reg_data["token"].startswith("ngt_"))
+
+        # 3. Duplicate registration rejected
+        dup_res = self.client.post("/api/auth/register", json={
+            "email": email,
+            "password": pwd
+        })
+        self.assertEqual(dup_res.status_code, 400)
+        self.assertIn("already exists", dup_res.json()["detail"].lower())
+
+        # 4. Login with Wrong Password rejected
+        wrong_res = self.client.post("/api/auth/login", json={
+            "email": email,
+            "password": "WrongPassword456"
+        })
+        self.assertEqual(wrong_res.status_code, 400)
+        self.assertIn("incorrect password", wrong_res.json()["detail"].lower())
+
+        # 5. Login with Correct Password succeeds
+        good_res = self.client.post("/api/auth/login", json={
+            "email": email,
+            "password": pwd
+        })
+        self.assertEqual(good_res.status_code, 200)
+        login_data = good_res.json()
+        self.assertEqual(login_data["status"], "success")
+        self.assertEqual(login_data["user"]["name"], "Suman")
+        self.assertTrue(login_data["token"].startswith("ngt_"))
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

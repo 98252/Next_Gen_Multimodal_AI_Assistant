@@ -437,23 +437,47 @@
         </div>
     </div>
 
-    <!-- Email Authentication Modal -->
+    <!-- Email & Password Authentication Modal -->
     <div class="modal-overlay" id="authModal" style="display: none;">
         <div class="modal-card auth-modal-card">
             <div class="modal-header">
                 <div class="auth-modal-title">
-                    <div class="auth-brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="auth-brand-badge"><i class="fa-solid fa-lock" id="authBrandIcon"></i></div>
                     <div>
                         <h3 id="authModalHeader">Sign In to Nepal-GPT</h3>
-                        <p class="auth-modal-sub" id="authModalSub">Log in with your Email ID for unlimited AI chats & history</p>
+                        <p class="auth-modal-sub" id="authModalSub">Enter your Email and Password to continue</p>
                     </div>
                 </div>
                 <button class="close-modal-btn" id="closeAuthModalBtn" onclick="closeAuthModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <div class="modal-body auth-modal-body">
-                <!-- Step 1: Email Input Form -->
+                <!-- Auth Tabs: Sign In / Create Account -->
+                <div class="auth-tabs">
+                    <button type="button" class="auth-tab active" id="authTabSignIn" onclick="setAuthMode('signin')">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+                    </button>
+                    <button type="button" class="auth-tab" id="authTabSignUp" onclick="setAuthMode('signup')">
+                        <i class="fa-solid fa-user-plus"></i> Create Account
+                    </button>
+                </div>
+
+                <!-- Form Container -->
                 <div id="authStepEmail" class="auth-step-container">
+                    <div class="auth-form-group" id="authNameGroup" style="display: none;">
+                        <label for="authNameInput"><i class="fa-solid fa-user"></i> Full Name (Optional)</label>
+                        <div class="auth-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="authNameInput" 
+                                placeholder="e.g. Rahul Sharma" 
+                                autocomplete="name"
+                                spellcheck="false"
+                                onkeydown="if (event.key === 'Enter') document.getElementById('authEmailInput').focus()"
+                            />
+                        </div>
+                    </div>
+
                     <div class="auth-form-group">
                         <label for="authEmailInput"><i class="fa-solid fa-envelope"></i> Email Address</label>
                         <div class="auth-input-wrapper">
@@ -463,66 +487,43 @@
                                 placeholder="name@example.com" 
                                 autocomplete="email"
                                 spellcheck="false"
-                                onkeydown="if (event.key === 'Enter') handleRequestOtp()"
+                                onkeydown="if (event.key === 'Enter') handleEmailEnter(event)"
                             />
                         </div>
-                        <span class="auth-field-hint">No password needed. We'll send a 6-digit verification code.</span>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label for="authPasswordInput"><i class="fa-solid fa-lock"></i> Password</label>
+                        <div class="auth-input-wrapper has-toggle">
+                            <input 
+                                type="password" 
+                                id="authPasswordInput" 
+                                placeholder="Enter your password (min 6 chars)" 
+                                autocomplete="current-password"
+                                onkeydown="if (event.key === 'Enter') handleAuthSubmit()"
+                            />
+                            <button type="button" class="password-toggle-btn" id="passwordToggleBtn" onclick="togglePasswordVisibility()" title="Show/Hide Password">
+                                <i class="fa-regular fa-eye" id="passwordToggleIcon"></i>
+                            </button>
+                        </div>
+                        <span class="auth-field-hint" id="authPasswordHint">Secure password (min. 6 characters)</span>
                     </div>
 
                     <div class="auth-actions-group">
-                        <button class="btn primary auth-submit-btn" id="sendOtpBtn" onclick="handleRequestOtp()">
-                            <i class="fa-solid fa-paper-plane"></i> Send Verification Code
+                        <button class="btn primary auth-submit-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">
+                            <i class="fa-solid fa-arrow-right-to-bracket" id="authSubmitIcon"></i> <span id="authSubmitText">Sign In</span>
                         </button>
-                        <button class="btn secondary auth-quick-btn" id="quickLoginBtn" onclick="handleQuickLogin()">
-                            <i class="fa-solid fa-bolt"></i> Instant 1-Click Login
-                        </button>
+                    </div>
+
+                    <div class="auth-switch-mode">
+                        <span id="authSwitchText">Don't have an account?</span>
+                        <button type="button" class="auth-switch-btn" id="authSwitchBtn" onclick="toggleAuthMode()">Create Account</button>
                     </div>
 
                     <div class="auth-perks-box">
                         <div class="perk-item"><i class="fa-solid fa-infinity"></i> <span>Unlimited Queries & Reasoning</span></div>
                         <div class="perk-item"><i class="fa-solid fa-brain"></i> <span>All 7 Special AI Modes</span></div>
                         <div class="perk-item"><i class="fa-solid fa-cloud"></i> <span>Saved History & Multimodal Uploads</span></div>
-                    </div>
-                </div>
-
-                <!-- Step 2: OTP Verification Form -->
-                <div id="authStepOtp" class="auth-step-container" style="display: none;">
-                    <div class="otp-sent-info">
-                        <i class="fa-solid fa-circle-check info-icon"></i>
-                        <div>
-                            <span>Code sent to <b id="otpEmailTarget">user@example.com</b></span>
-                            <button class="change-email-btn" onclick="goToAuthStep('email')">Change</button>
-                        </div>
-                    </div>
-
-                    <div class="auth-form-group">
-                        <label for="otpCodeInput"><i class="fa-solid fa-key"></i> 6-Digit Verification Code</label>
-                        <div class="auth-input-wrapper">
-                            <input 
-                                type="text" 
-                                id="otpCodeInput" 
-                                class="otp-input-field" 
-                                placeholder="• • • • • •" 
-                                maxlength="6"
-                                autocomplete="one-time-code"
-                                onkeydown="if (event.key === 'Enter') handleVerifyOtp()"
-                            />
-                        </div>
-                        <div class="demo-otp-banner" id="demoOtpBanner" style="display: none;">
-                            <span class="demo-badge">DEV CODE</span>
-                            <span>Auto-generated OTP: <b id="demoOtpValue">123456</b></span>
-                            <button class="auto-fill-btn" onclick="autoFillOtp()">Auto-Fill</button>
-                        </div>
-                    </div>
-
-                    <div class="auth-actions-group">
-                        <button class="btn primary auth-submit-btn" id="verifyOtpBtn" onclick="handleVerifyOtp()">
-                            <i class="fa-solid fa-arrow-right-to-bracket"></i> Verify & Sign In
-                        </button>
-                        <div class="resend-wrapper">
-                            <span>Didn't receive code?</span>
-                            <button class="resend-link" id="resendOtpBtn" onclick="handleRequestOtp()">Resend Code</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -564,6 +565,6 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=10.0"></script>
+    <script src="/static/script.js?v=13.0"></script>
 </body>
 </html>
